@@ -1367,8 +1367,8 @@ button:disabled {
     position: absolute;
     background: var(--bg-primary);
     border: 2px solid var(--accent-primary);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 8px;
+    padding: 8px;
     cursor: pointer;
     pointer-events: auto;
     transition: all 0.2s ease;
@@ -1376,8 +1376,9 @@ button:disabled {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     z-index: 1;
+    min-width: 50px;
 }
 
 .player-controls-overlay .direction-button:hover:not(.disabled) {
@@ -1393,7 +1394,7 @@ button:disabled {
 }
 
 .player-controls-overlay .direction-arrow {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
 }
 
@@ -1409,11 +1410,7 @@ button:disabled {
     border-radius: 4px;
     color: white;
     font-weight: bold;
-    font-size: 11px;
-}
-
-.player-controls-overlay .direction-key {
-    font-size: 14px;
+    font-size: 13px;
 }
 
 /* Positionnement des boutons directionnels */
@@ -1447,8 +1444,8 @@ button:disabled {
     transform: translate(-50%, -50%);
     background: var(--accent-success);
     border-color: var(--accent-success);
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     justify-content: center;
 }
@@ -1460,7 +1457,7 @@ button:disabled {
 }
 
 .player-controls-overlay .direction-stay-label {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     color: white;
 }

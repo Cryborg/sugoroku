@@ -806,7 +806,6 @@ createApp({
                             <div class="direction-arrow">↑</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.north.color}">{{ door.diceResult }}</span>
-                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
                             </div>
                         </div>
 
@@ -818,7 +817,6 @@ createApp({
                             <div class="direction-arrow">↓</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.south.color}">{{ door.diceResult }}</span>
-                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
                             </div>
                         </div>
 
@@ -830,7 +828,6 @@ createApp({
                             <div class="direction-arrow">←</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.west.color}">{{ door.diceResult }}</span>
-                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
                             </div>
                         </div>
 
@@ -842,7 +839,6 @@ createApp({
                             <div class="direction-arrow">→</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.east.color}">{{ door.diceResult }}</span>
-                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
                             </div>
                         </div>
 
