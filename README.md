@@ -2,6 +2,8 @@
 
 POC jouable en navigateur du jeu "Future Sugoroku" vu dans Alice in Borderland.
 
+**Version actuelle : 0.2** 🏁
+
 ## 🚀 Installation et lancement rapide
 
 ### Prérequis
@@ -19,6 +21,31 @@ php -S localhost:8000 -t public
 ```
 
 Ouvrir le navigateur à l'adresse : **http://localhost:8000**
+
+## ✨ Fonctionnalités (v0.2)
+
+### Interface de jeu
+- 🎮 **Plateau 5×5** avec brouillard de guerre (salles non découvertes masquées)
+- ⏱️ **Timer en temps réel** de 60 secondes par phase
+- 📊 **Panel des joueurs** avec points en temps réel et statut
+- 🚪 **Système de portes** avec dés colorés par direction
+
+### Animations et feedback visuel
+- 💫 **Popup de perte de points** en fin de tour avec :
+  - Animation de décompte des points (un par un)
+  - Indicateur rouge "-X" qui monte en fade
+  - Affichage des avatars (💀 pour les morts, 🏁 pour les gagnants)
+- 🏁 **Marquage des gagnants** dès l'arrivée avec drapeau animé
+- 🎊 **Animation joyeuse** pour les joueurs sur la case d'arrivée (sautillement)
+- 💓 **Heartbeat** sur les avatars au survol
+- ✨ **Indicateurs visuels** de statut (joué, bloqué, mort, gagnant)
+
+### Système de jeu
+- 🎲 **Lancer de dés automatique** (D10 + nombre de joueurs + 1)
+- 🤝 **Choix collaboratifs** avec visibilité des actions
+- 🔒 **Système de lockdown** avec sélection aléatoire
+- 💰 **Déduction des points de salle en fin de tour** (surprise garantie)
+- 🏆 **Détection de victoire/défaite** temps réel
 
 ## 📁 Structure du projet
 

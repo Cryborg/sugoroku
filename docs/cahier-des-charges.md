@@ -220,22 +220,25 @@ Les dés affichés ont la même couleur que leur porte associée pour faciliter 
 
 ## 📦 Fonctionnalités du POC (MVP)
 
-### ✅ Inclus
-- [ ] Enregistrement des joueurs (3-8)
-- [ ] Génération aléatoire du plateau (distribution points perdus)
-- [ ] Affichage visuel du plateau 5×5 avec brouillard de guerre (salles non visitées)
-- [ ] Système de phases avec timers (max 15 tours)
-- [ ] Timer de 60 secondes par phase (compte à rebours visible)
-- [ ] Lancer de dés automatique par pièce (D10)
-- [ ] Interface de choix de porte collaborative
-- [ ] Résolution lockdown avec sélection aléatoire
-- [ ] Décompte automatique des points (tour + entrée salle)
-- [ ] Système de libération entre joueurs
-- [ ] Détection victoire/défaite
-- [ ] Écran de fin avec stats
-- [ ] Thème sombre
-- [ ] API REST pour communication frontend/backend
-- [ ] Persistance en base de données (SQLite)
+### ✅ Inclus (v0.2)
+- [x] Enregistrement des joueurs (3-8)
+- [x] Génération aléatoire du plateau (distribution points perdus)
+- [x] Affichage visuel du plateau 5×5 avec brouillard de guerre (salles non visitées)
+- [x] Système de phases avec timers (max 15 tours)
+- [x] Timer de 60 secondes par phase (compte à rebours visible)
+- [x] Lancer de dés automatique par pièce (D10 + nombre de joueurs + 1)
+- [x] Interface de choix de porte collaborative
+- [x] Résolution lockdown avec sélection aléatoire
+- [x] Décompte automatique des points (porte + salle en fin de tour)
+- [x] Système de libération entre joueurs
+- [x] Détection victoire/défaite
+- [x] Écran de fin avec stats stylées (gagnants/survivants/morts)
+- [x] Thème sombre
+- [x] API REST pour communication frontend/backend
+- [x] Persistance en base de données (SQLite)
+- [x] Popup de perte de points avec animation
+- [x] Indicateurs visuels de statut (gagnants, morts, bloqués)
+- [x] Animations (heartbeat, bounce, fade)
 
 ### ⏳ Post-MVP (si temps)
 - [ ] Cartes "Futurs possibles" (événements aléatoires)
@@ -333,13 +336,36 @@ Les dés affichés ont la même couleur que leur porte associée pour faciliter 
 
 ---
 
+## 🚀 Historique des versions
+
+### v0.2 (en cours)
+- ✅ Popup de perte de points avec animation
+- ✅ Indicateur rouge "-X" qui monte en fade
+- ✅ Marquage des joueurs gagnants dès l'arrivée
+- ✅ Drapeau 🏁 animé sur les cartes des joueurs gagnants
+- ✅ Drapeau 🏁 sur la case arrivée quand découverte
+- ✅ Animation joyeuse pour les joueurs sur la case arrivée
+- ✅ Déduction des points de salle à la fin du tour (surprise)
+- ✅ Amélioration de l'écran de fin (sections stylées)
+
+### v0.1
+- ✅ Architecture MVC PHP complète
+- ✅ Base de données SQLite avec schéma
+- ✅ API REST fonctionnelle
+- ✅ Interface Vue.js 3
+- ✅ Système de jeu complet (tours, dés, portes, lockdown)
+- ✅ Timer temps réel avec auto-résolution
+- ✅ Brouillard de guerre
+- ✅ Dark mode
+
 ## 🚀 Prochaines étapes
 
 1. ✅ Validation du cahier des charges
-2. Setup du projet (structure de dossiers, dépendances)
-3. Création du schéma de base de données
-4. Développement des Models (logique métier)
-5. Développement des Controllers (API REST)
-6. Développement du frontend (Vue.js + interface)
-7. Tests et ajustements
-8. Documentation finale
+2. ✅ Setup du projet (structure de dossiers, dépendances)
+3. ✅ Création du schéma de base de données
+4. ✅ Développement des Models (logique métier)
+5. ✅ Développement des Controllers (API REST)
+6. ✅ Développement du frontend (Vue.js + interface)
+7. ✅ Tests et ajustements
+8. ✅ Documentation finale
+9. 🔄 Améliorations continues (objets bonus, cartes événements...)
