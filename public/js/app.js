@@ -440,19 +440,25 @@ createApp({
             }
         },
 
-        goHome() {
-            this.showConfirmModal(
-                'Retour à l\'accueil',
-                'Êtes-vous sûr de vouloir retourner à l\'accueil ? La partie est sauvegardée automatiquement.',
-                async () => {
-                    this.stopPolling();
-                    this.stopTimer();
-                    this.screen = 'registration';
-                    this.gameId = null;
-                    this.game = null;
-                    await this.loadSavedGames();
-                }
-            );
+        async goHome(skipConfirmation = false) {
+            const doGoHome = async () => {
+                this.stopPolling();
+                this.stopTimer();
+                this.screen = 'registration';
+                this.gameId = null;
+                this.game = null;
+                await this.loadSavedGames();
+            };
+
+            if (skipConfirmation) {
+                await doGoHome();
+            } else {
+                this.showConfirmModal(
+                    'Retour à l\'accueil',
+                    'Êtes-vous sûr de vouloir retourner à l\'accueil ? La partie est sauvegardée automatiquement.',
+                    doGoHome
+                );
+            }
         },
 
         async giveUp(playerId) {
