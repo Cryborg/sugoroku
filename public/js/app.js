@@ -703,7 +703,7 @@ createApp({
                                 <div class="room-label">{{ getRoomLabel(room) }}</div>
                                 <div class="room-info-right">
                                     <div v-if="room.isStart" class="start-flag">🏁</div>
-                                    <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">-{{ room.pointsCost }} pts</div>
+                                    <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">-{{ room.pointsCost }}</div>
                                     <div v-else-if="!room.isExit" class="cost-hidden">???</div>
                                 </div>
                             </div>
