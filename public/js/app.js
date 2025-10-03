@@ -533,7 +533,8 @@ createApp({
                         'west': '←'
                     },
                     hoveredPlayer: null,
-                    popupStyle: {
+                    hoveredPlayerBadge: null,
+                    controlsStyle: {
                         top: '0px',
                         left: '0px'
                     },
@@ -593,56 +594,54 @@ createApp({
                     };
                     return labels[status] || status;
                 },
-                onPlayerMouseEnter(event, player) {
-                    // Les joueurs morts ne peuvent pas jouer
-                    if (player.status === 'dead' || player.status === 'winner') return;
-                    // Ne pas afficher la popup si le joueur a déjà fait son choix
-                    if (player.hasChosen) return;
+                onPlayerBadgeEnter(event, player) {
+                    // Les joueurs morts ou qui ont déjà choisi ne peuvent pas jouer
+                    if (player.status === 'dead' || player.status === 'winner' || player.hasChosen) return;
+
                     if (this.hideTimeout) {
                         clearTimeout(this.hideTimeout);
                         this.hideTimeout = null;
                     }
-                    const rect = event.currentTarget.getBoundingClientRect();
 
-                    // Calculer la position de la popup en évitant qu'elle sorte de l'écran
-                    const popupHeight = 400; // Hauteur approximative de la popup
-                    const popupWidth = 320; // Largeur de la popup
-                    const viewportHeight = window.innerHeight;
-                    const viewportWidth = window.innerWidth;
-                    const gap = 20; // Espace entre la carte et la popup
+                    const badge = event.currentTarget;
+                    const rect = badge.getBoundingClientRect();
 
-                    // Position verticale : Si la popup dépasserait en bas, la positionner au-dessus
-                    if (rect.bottom + popupHeight > viewportHeight) {
-                        this.popupStyle.top = `${Math.max(10, rect.bottom - popupHeight)}px`;
-                    } else {
-                        this.popupStyle.top = `${rect.top}px`;
-                    }
-
-                    // Position horizontale : À droite de la carte du joueur
-                    const leftPosition = rect.right + gap;
-
-                    // Si la popup dépasserait à droite, la positionner à gauche de la carte
-                    if (leftPosition + popupWidth > viewportWidth) {
-                        this.popupStyle.left = `${Math.max(10, rect.left - popupWidth - gap)}px`;
-                    } else {
-                        this.popupStyle.left = `${leftPosition}px`;
-                    }
+                    // Centrer les contrôles sur le badge
+                    this.controlsStyle.top = `${rect.top + rect.height / 2}px`;
+                    this.controlsStyle.left = `${rect.left + rect.width / 2}px`;
 
                     this.hoveredPlayer = player;
+                    this.hoveredPlayerBadge = badge;
                 },
-                onPlayerMouseLeave() {
+                onPlayerBadgeLeave() {
                     this.hideTimeout = setTimeout(() => {
                         this.hoveredPlayer = null;
-                    }, 100);
+                        this.hoveredPlayerBadge = null;
+                    }, 200);
                 },
-                onPopupMouseEnter() {
+                onPlayerBadgeTouch(event, player) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    // Si on touche le même joueur, on ferme
+                    if (this.hoveredPlayer && this.hoveredPlayer.id === player.id) {
+                        this.hoveredPlayer = null;
+                        this.hoveredPlayerBadge = null;
+                        return;
+                    }
+
+                    // Sinon on affiche les contrôles
+                    this.onPlayerBadgeEnter(event, player);
+                },
+                onControlsEnter() {
                     if (this.hideTimeout) {
                         clearTimeout(this.hideTimeout);
                         this.hideTimeout = null;
                     }
                 },
-                onPopupMouseLeave() {
+                onControlsLeave() {
                     this.hoveredPlayer = null;
+                    this.hoveredPlayerBadge = null;
                 },
                 getPlayerRoom(playerId) {
                     const player = this.game.players.find(p => p.id === playerId);
@@ -728,8 +727,9 @@ createApp({
                 }
             },
             template: `
-                <div class="game-container">
-                    <div class="players-panel">
+                <div class="game-container-fullscreen">
+                    <!-- Header avec timer et infos -->
+                    <div class="game-header">
                         <div class="timer-panel">
                             <div class="timer-section">
                                 <div class="turn-label">Tour {{ game.currentTurn }}/{{ maxTurns }}</div>
@@ -758,119 +758,6 @@ createApp({
                             </div>
                         </div>
 
-                        <h2 class="players-title">Joueurs</h2>
-                        <div class="players-list-container">
-                            <div v-for="player in game.players" :key="player.id"
-                                 :class="['player-card', player.status, {played: player.hasChosen, 'popup-open': hoveredPlayer && hoveredPlayer.id === player.id}]"
-                                 @mouseenter="(e) => onPlayerMouseEnter(e, player)"
-                                 @mouseleave="onPlayerMouseLeave">
-                                <div class="player-header">
-                                    <div class="player-name">{{ player.name }}</div>
-                                    <div :class="['player-points', pointsClass(player.points)]">{{ player.points }} pts</div>
-                                </div>
-                                <div class="happiness-bar-container" :title="getHappinessLabel(player)">
-                                    <div class="happiness-bar-fill"
-                                         :class="{negative: getHappinessPercentage(player) < 50, positive: getHappinessPercentage(player) > 50}"
-                                         :style="{width: getHappinessPercentage(player) + '%'}">
-                                    </div>
-                                    <div class="happiness-value">{{ getHappinessPercentage(player) }}%</div>
-                                </div>
-                                <div v-if="player.status === 'winner'" class="winner-flag" title="A atteint la sortie !">🏁</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Popin d'actions - en dehors du panneau -->
-                    <div v-if="hoveredPlayer" class="player-actions-popup" :style="popupStyle"
-                         @mouseenter="onPopupMouseEnter"
-                         @mouseleave="onPopupMouseLeave">
-                        <div class="popup-title">
-                            Actions de {{ hoveredPlayer.name }}
-                            <span v-if="hoveredPlayer.hasChosen" style="color: var(--accent-success); margin-left: 8px;">✓ Choix fait</span>
-                        </div>
-
-                        <!-- Bouton abandonner (visible seulement si quelqu'un est dans la sortie) -->
-                        <div v-if="someoneInExit" class="give-up-action">
-                            <button @click="$emit('give-up', hoveredPlayer.id)"
-                                    class="btn-give-up"
-                                    :disabled="hoveredPlayer.hasChosen">
-                                💀 Abandonner
-                            </button>
-                        </div>
-
-                        <!-- Grille directionnelle (comme un clavier) -->
-                        <div class="directions-grid">
-                            <!-- Nord -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'north')" :key="door.id"
-                                 class="direction-cell north"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">↑</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.north.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
-                                </div>
-                            </div>
-
-                            <!-- Ouest -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'west')" :key="door.id"
-                                 class="direction-cell west"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">←</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.west.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
-                                </div>
-                            </div>
-
-                            <!-- Centre : Rester ici -->
-                            <div class="direction-cell center"
-                                 :class="{
-                                     selected: hoveredPlayer.hasChosen && !hoveredPlayer.chosenDoorId,
-                                     disabled: hoveredPlayer.hasChosen
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && stayInRoomAction(hoveredPlayer.id)">
-                                <div class="direction-icon">●</div>
-                                <div class="direction-label">Rester</div>
-                            </div>
-
-                            <!-- Est -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'east')" :key="door.id"
-                                 class="direction-cell east"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">→</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.east.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
-                                </div>
-                            </div>
-
-                            <!-- Sud -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'south')" :key="door.id"
-                                 class="direction-cell south"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">↓</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.south.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="board-grid">
@@ -886,7 +773,16 @@ createApp({
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="room-players-list">
                                 <div v-for="p in playersInRoom(room.id)" :key="p.id"
-                                     :class="['player-dot', {heartbeat: hoveredPlayer && hoveredPlayer.id === p.id, 'happy-bounce': room.isExit && room.isVisited && allPlayersHavePlayed}]">
+                                     :class="['player-badge-interactive', {
+                                         'player-badge-active': hoveredPlayer && hoveredPlayer.id === p.id,
+                                         'player-badge-dead': p.status === 'dead',
+                                         'player-badge-played': p.hasChosen,
+                                         'happy-bounce': room.isExit && room.isVisited && allPlayersHavePlayed
+                                     }]"
+                                     @mouseenter="(e) => onPlayerBadgeEnter(e, p)"
+                                     @mouseleave="onPlayerBadgeLeave"
+                                     @touchstart="(e) => onPlayerBadgeTouch(e, p)"
+                                     :title="p.name + ' - ' + p.points + ' pts'">
                                     {{ p.status === 'dead' ? '💀' : p.name[0] }}
                                 </div>
                             </div>
@@ -895,6 +791,71 @@ createApp({
                                     <div class="dice-result" :style="{backgroundColor: doorColors[door.direction].color}">{{ door.diceResult }}</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Contrôles directionnels autour du badge -->
+                    <div v-if="hoveredPlayer" class="player-controls-overlay" :style="controlsStyle"
+                         @mouseenter="onControlsEnter"
+                         @mouseleave="onControlsLeave">
+                        <!-- Nord -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'north')" :key="'n-'+door.id"
+                             class="direction-button direction-north"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">↑</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.north.color}">{{ door.diceResult }}</span>
+                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
+                            </div>
+                        </div>
+
+                        <!-- Sud -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'south')" :key="'s-'+door.id"
+                             class="direction-button direction-south"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">↓</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.south.color}">{{ door.diceResult }}</span>
+                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
+                            </div>
+                        </div>
+
+                        <!-- Ouest -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'west')" :key="'w-'+door.id"
+                             class="direction-button direction-west"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">←</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.west.color}">{{ door.diceResult }}</span>
+                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
+                            </div>
+                        </div>
+
+                        <!-- Est -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'east')" :key="'e-'+door.id"
+                             class="direction-button direction-east"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">→</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.east.color}">{{ door.diceResult }}</span>
+                                <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑</span>
+                            </div>
+                        </div>
+
+                        <!-- Centre : Rester -->
+                        <div class="direction-button direction-center"
+                             @click="stayInRoomAction(hoveredPlayer.id)">
+                            <div class="direction-stay-label">Rester</div>
+                        </div>
+
+                        <!-- Bouton Abandonner (si disponible) -->
+                        <div v-if="someoneInExit" class="direction-button direction-give-up"
+                             @click="$emit('give-up', hoveredPlayer.id)">
+                            💀
                         </div>
                     </div>
                 </div>
