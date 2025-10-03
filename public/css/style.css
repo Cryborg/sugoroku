@@ -1255,7 +1255,7 @@ button:disabled {
     gap: 12px;
 }
 
-.game-header {
+.game-container-fullscreen .game-header {
     background: var(--bg-secondary);
     padding: 16px 24px;
     border-radius: 12px;
@@ -1264,19 +1264,35 @@ button:disabled {
     justify-content: space-between;
     align-items: center;
     gap: 24px;
+    flex-shrink: 0;
 }
 
-.game-header .timer-panel {
+.game-container-fullscreen .timer-panel {
     display: flex;
     gap: 32px;
     align-items: center;
     margin: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 
-.game-header .timer-section {
+.game-container-fullscreen .timer-section {
     display: flex;
     gap: 16px;
     align-items: center;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.game-container-fullscreen .board-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-height: 100%;
 }
 
 /* Badges de joueurs interactifs */
@@ -1471,4 +1487,74 @@ button:disabled {
         height: 36px;
         font-size: 16px;
     }
+}
+
+/* Styles spécifiques pour le nouveau layout fullscreen */
+.game-container-fullscreen .room {
+    aspect-ratio: 1;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s;
+    font-size: 16px;
+    min-height: 0;
+}
+
+.game-container-fullscreen .room.start {
+    border-color: var(--accent-success);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.game-container-fullscreen .room.visited {
+    border-color: #2563eb;
+}
+
+.game-container-fullscreen .room.has-players {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.game-container-fullscreen .progress-section {
+    padding-top: 0;
+}
+
+.game-container-fullscreen .progress-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.game-container-fullscreen .progress-bar-container {
+    position: relative;
+    height: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    overflow: visible;
+    border: 1px solid var(--border-color);
+}
+
+.game-container-fullscreen .turn-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.game-container-fullscreen .timer-display {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-warning);
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+}
+
+.game-container-fullscreen .timer-display.danger {
+    color: var(--accent-danger);
+    animation: pulse 1s infinite;
 }
