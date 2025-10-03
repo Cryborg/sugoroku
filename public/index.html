@@ -301,7 +301,7 @@
                         <div class="player-avatar">
                             <span v-if="player.finalStatus === 'dead'" class="player-status-icon">💀</span>
                             <span v-else-if="player.finalStatus === 'winner'" class="player-status-icon">🏁</span>
-                            <img v-else :src="`avatars/${player.gender}/${player.avatar}`" class="player-avatar-img" :alt="player.name">
+                            <img v-else :src="`avatars/${player.gender || 'male'}/${player.avatar || 'male_01.png'}`" class="player-avatar-img" :alt="player.name">
                         </div>
                         <div class="player-name">{{ player.name }}</div>
                         <div class="player-points-value">
