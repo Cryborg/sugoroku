@@ -960,7 +960,7 @@ createApp({
                                      @touchstart="(e) => onPlayerBadgeTouch(e, p)"
                                      :title="p.name + ' - ' + p.points + ' pts'">
                                     <span v-if="p.status === 'dead'" class="player-badge-death">💀</span>
-                                    <img v-else :src="`avatars/${p.gender}/${p.avatar}`" class="player-badge-img" :alt="p.name">
+                                    <img v-else :src="'avatars/' + p.gender + '/' + p.avatar" class="player-badge-img" :alt="p.name">
                                 </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="doors-container">
@@ -977,7 +977,7 @@ createApp({
                          @mouseleave="onControlsLeave">
                         <!-- Nom et avatar du joueur -->
                         <div class="player-controls-name">
-                            <img :src="`avatars/${hoveredPlayer.gender}/${hoveredPlayer.avatar}`" class="player-controls-avatar" :alt="hoveredPlayer.name">
+                            <img :src="'avatars/' + hoveredPlayer.gender + '/' + hoveredPlayer.avatar" class="player-controls-avatar" :alt="hoveredPlayer.name">
                             <span>{{ hoveredPlayer.name }}</span>
                         </div>
 
