@@ -547,6 +547,13 @@ createApp({
                         p.points >= 1
                     );
                 },
+                allPlayersHavePlayed() {
+                    if (!this.game) return false;
+                    const alivePlayers = this.game.players.filter(p => p.status === 'alive');
+                    if (alivePlayers.length === 0) return true;
+                    const playersWhoChose = alivePlayers.filter(p => p.hasChosen);
+                    return playersWhoChose.length === alivePlayers.length;
+                },
                 maxTurns() {
                     return GAME_CONFIG.MAX_TURNS;
                 }
@@ -821,7 +828,7 @@ createApp({
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="room-players-list">
                                 <div v-for="p in playersInRoom(room.id)" :key="p.id"
-                                     :class="['player-dot', {heartbeat: hoveredPlayer && hoveredPlayer.id === p.id, 'happy-bounce': room.isExit && room.isVisited}]">
+                                     :class="['player-dot', {heartbeat: hoveredPlayer && hoveredPlayer.id === p.id, 'happy-bounce': room.isExit && room.isVisited && allPlayersHavePlayed}]">
                                     {{ p.status === 'dead' ? '💀' : p.name[0] }}
                                 </div>
                             </div>
