@@ -130,7 +130,7 @@ class GameController
         }
 
         // Vérifier les joueurs par statut
-        $playersInExit = [];
+        $winners = [];
         $alive = [];
         $dead = [];
 
@@ -140,25 +140,24 @@ class GameController
                 continue;
             }
 
+            // Marquer comme gagnant dès qu'il arrive à la sortie avec au moins 1 point
             if ($player->currentRoomId === $exitRoom->id && $player->points >= 1) {
-                $playersInExit[] = $player;
+                if ($player->status !== 'winner') {
+                    $player->updateStatus('winner');
+                }
+                $winners[] = $player;
             } else {
                 $alive[] = $player;
             }
         }
 
-        // Victoire uniquement si TOUS les joueurs vivants sont dans la sortie
-        if (count($playersInExit) > 0 && count($alive) === 0) {
-            // Marquer tous les joueurs dans la sortie comme gagnants
-            foreach ($playersInExit as $player) {
-                $player->updateStatus('winner');
-            }
-
+        // Victoire si TOUS les joueurs vivants sont dans la sortie
+        if (count($winners) > 0 && count($alive) === 0) {
             $game->finish();
             return $this->success([
                 'gameOver' => true,
                 'reason' => 'victory',
-                'winners' => array_map(fn($p) => $p->toArray(), $playersInExit),
+                'winners' => array_map(fn($p) => $p->toArray(), $winners),
                 'dead' => array_map(fn($p) => $p->toArray(), $dead)
             ]);
         }
@@ -175,7 +174,7 @@ class GameController
         }
 
         // Si tous les joueurs sont morts
-        if (count($alive) === 0 && count($playersInExit) === 0) {
+        if (count($alive) === 0 && count($winners) === 0) {
             $game->finish();
             return $this->success([
                 'gameOver' => true,

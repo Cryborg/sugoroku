@@ -63,7 +63,7 @@
             <h1>🎮 Partie terminée</h1>
 
             <div v-if="endData.reason === 'victory'" class="winners">
-                <h2>🎉 Gagnants !</h2>
+                <h2>🏁 Gagnants !</h2>
                 <div v-for="winner in endData.winners" :key="winner.id" class="winner-item">
                     {{ winner.name }} - {{ winner.points }} points
                 </div>
@@ -83,13 +83,37 @@
             </div>
 
             <div v-if="endData.dead && endData.dead.length > 0" class="dead">
-                <h3>Morts</h3>
-                <div v-for="dead in endData.dead" :key="dead.id">
+                <h3>💀 Morts</h3>
+                <div v-for="dead in endData.dead" :key="dead.id" class="dead-item">
                     {{ dead.name }}
                 </div>
             </div>
 
             <button @click="resetGame" class="btn-reset">Nouvelle partie</button>
+        </div>
+
+        <!-- Popup de perte de points -->
+        <div v-if="showPointsLossPopup" class="points-loss-overlay">
+            <div class="points-loss-popup">
+                <h2>Fin du tour {{ pointsLossData?.turn }}</h2>
+                <div class="players-points-grid">
+                    <div v-for="player in pointsLossData?.players" :key="player.id" class="player-points-card">
+                        <div class="player-avatar">
+                            <span v-if="player.finalStatus === 'dead'">💀</span>
+                            <span v-else-if="player.finalStatus === 'winner'">🏁</span>
+                            <span v-else>{{ player.name[0] }}</span>
+                        </div>
+                        <div class="player-name">{{ player.name }}</div>
+                        <div class="player-points-value">
+                            <span class="points-number">{{ player.animatedPoints }}</span>
+                            <span class="points-label">pts</span>
+                            <span v-if="player.showLoss && player.pointsLost > 0" class="points-lost-indicator">
+                                -{{ player.pointsLost }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

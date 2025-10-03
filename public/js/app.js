@@ -26,7 +26,10 @@ createApp({
                 'south': '#10b981', // vert
                 'east': '#ef4444',  // rouge
                 'west': '#f59e0b'   // jaune
-            }
+            },
+            showPointsLossPopup: false,
+            pointsLossData: null,
+            playersPointsAtTurnStart: {}  // Points au début de chaque tour
         };
     },
 
@@ -102,6 +105,14 @@ createApp({
 
                 if (data.success) {
                     this.game = data.data.state;
+
+                    // Sauvegarder les points initiaux pour le tour 1
+                    console.log(`[launchGame] Sauvegarde des points initiaux:`, this.game.players.map(p => `${p.name}: ${p.points}`));
+                    this.playersPointsAtTurnStart = {};
+                    this.game.players.forEach(player => {
+                        this.playersPointsAtTurnStart[player.id] = player.points;
+                    });
+
                     this.screen = 'game';
                     this.startPolling();
                     this.startTimer();
@@ -307,7 +318,34 @@ createApp({
 
             // Si tous les joueurs vivants ont fait leur action, passer au tour suivant
             if (alivePlayers.length > 0 && playersWhoChose.length === alivePlayers.length) {
+                const currentTurn = this.game.currentTurn;
+
+                // Points AVANT (début du tour, sauvegardés dans updateGameState)
+                const playersBeforeTurn = this.game.players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    points: this.playersPointsAtTurnStart[p.id] ?? p.points,
+                    animatedPoints: this.playersPointsAtTurnStart[p.id] ?? p.points
+                }));
+
+                console.log(`[checkNextTurn] Tour ${currentTurn} terminé`);
+                console.log(`[checkNextTurn] Points AVANT (début tour):`, playersBeforeTurn.map(p => `${p.name}: ${p.points}`));
+                console.log(`[checkNextTurn] Points ACTUELS (avant nextTurn):`, this.game.players.map(p => `${p.name}: ${p.points}`));
+
+                // Appeler nextTurn pour passer au tour suivant (déduit les points de salle côté serveur)
                 await this.nextTurn();
+
+                // Points APRÈS (après déduction des points de salle par le serveur)
+                const playersAfterTurn = this.game.players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    points: p.points
+                }));
+
+                console.log(`[checkNextTurn] Points APRÈS (après nextTurn):`, playersAfterTurn.map(p => `${p.name}: ${p.points}`));
+
+                // Afficher la popup de perte de points
+                await this.showPointsLoss(currentTurn, playersBeforeTurn, playersAfterTurn);
             }
         },
 
@@ -321,6 +359,14 @@ createApp({
                 if (data.success) {
                     await this.updateGameState();
                     this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
+
+                    // Sauvegarder les points du NOUVEAU tour (pour la prochaine fois)
+                    console.log(`[nextTurn] Sauvegarde des points pour le tour ${this.game.currentTurn}:`, this.game.players.map(p => `${p.name}: ${p.points}`));
+                    console.log(`[nextTurn] Salles visitées:`, this.game.rooms.filter(r => r.isVisited).map(r => `${r.positionX},${r.positionY} (exit:${r.isExit})`));
+                    this.playersPointsAtTurnStart = {};
+                    this.game.players.forEach(player => {
+                        this.playersPointsAtTurnStart[player.id] = player.points;
+                    });
                 } else {
                     console.error('Erreur passage tour:', data.error);
                 }
@@ -345,6 +391,95 @@ createApp({
             this.game = null;
             this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
             this.endData = null;
+        },
+
+        async showPointsLoss(turn, oldPlayersData, newPlayersData) {
+            const startTime = Date.now();
+            console.log(`[${Date.now() - startTime}ms] === DÉBUT showPointsLoss ===`);
+            console.log(`[${Date.now() - startTime}ms] Points d'origine:`, oldPlayersData.map(p => `${p.name}: ${p.points}`));
+            console.log(`[${Date.now() - startTime}ms] Points finaux:`, newPlayersData.map(p => `${p.name}: ${p.points}`));
+
+            // Afficher la popup avec les points d'origine + calculer les pertes + statut final
+            this.pointsLossData = {
+                turn,
+                players: oldPlayersData.map(oldPlayer => {
+                    const newPlayer = newPlayersData.find(p => p.id === oldPlayer.id);
+                    const pointsLost = oldPlayer.points - (newPlayer?.points ?? oldPlayer.points);
+
+                    // Récupérer le statut final depuis this.game.players (après nextTurn)
+                    const currentPlayer = this.game?.players?.find(p => p.id === oldPlayer.id);
+                    const finalStatus = currentPlayer?.status ?? oldPlayer.status;
+
+                    return {
+                        ...oldPlayer,
+                        pointsLost,
+                        showLoss: false,
+                        finalStatus
+                    };
+                })
+            };
+            this.showPointsLossPopup = true;
+            console.log(`[${Date.now() - startTime}ms] Popup affichée avec points:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
+
+            // Attendre 2 secondes avant de commencer la décrémentation
+            console.log(`[${Date.now() - startTime}ms] Attente 2 secondes...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Activer l'animation de perte (fade up)
+            this.pointsLossData.players.forEach(p => p.showLoss = true);
+
+            // Trouver le nombre maximum de points à décrémenter
+            let maxPointsToRemove = 0;
+            for (const oldPlayer of oldPlayersData) {
+                const newPlayer = newPlayersData.find(p => p.id === oldPlayer.id);
+                if (newPlayer) {
+                    const diff = oldPlayer.points - newPlayer.points;
+                    maxPointsToRemove = Math.max(maxPointsToRemove, diff);
+                }
+            }
+
+            console.log(`[${Date.now() - startTime}ms] DÉBUT ANIMATION - maxPointsToRemove: ${maxPointsToRemove}`);
+
+            // Animer chaque point un par un
+            for (let i = 1; i <= maxPointsToRemove; i++) {
+                this.pointsLossData.players = oldPlayersData.map(oldPlayer => {
+                    const newPlayer = newPlayersData.find(p => p.id === oldPlayer.id);
+                    if (!newPlayer) return oldPlayer;
+
+                    const totalDiff = oldPlayer.points - newPlayer.points;
+                    const newValue = Math.max(newPlayer.points, oldPlayer.points - i);
+
+                    // Récupérer le statut final depuis this.game.players
+                    const currentPlayer = this.game?.players?.find(p => p.id === oldPlayer.id);
+                    const finalStatus = currentPlayer?.status ?? oldPlayer.status;
+
+                    return {
+                        ...oldPlayer,
+                        animatedPoints: newValue,
+                        pointsLost: totalDiff,
+                        showLoss: true,
+                        finalStatus
+                    };
+                });
+
+                if (i === 1 || i === maxPointsToRemove) {
+                    console.log(`[${Date.now() - startTime}ms] Frame ${i}/${maxPointsToRemove}:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
+                }
+
+                // 150ms entre chaque décrémentation (environ 6-7 points par seconde)
+                await new Promise(resolve => setTimeout(resolve, 150));
+            }
+
+            console.log(`[${Date.now() - startTime}ms] FIN ANIMATION`);
+            console.log(`[${Date.now() - startTime}ms] Points finaux affichés:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
+
+            // Attendre 2 secondes après la fin de l'animation (temps pour le fade up de finir)
+            console.log(`[${Date.now() - startTime}ms] Attente 2 secondes avant fermeture...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            console.log(`[${Date.now() - startTime}ms] Fermeture popup`);
+            this.showPointsLossPopup = false;
+            this.pointsLossData = null;
         },
 
         // Helpers
@@ -575,6 +710,7 @@ createApp({
                                     <div class="player-name">{{ player.name }}</div>
                                     <div :class="['player-points', pointsClass(player.points)]">{{ player.points }} pts</div>
                                 </div>
+                                <div v-if="player.status === 'winner'" class="winner-flag" title="A atteint la sortie !">🏁</div>
                             </div>
                         </div>
                     </div>
@@ -678,12 +814,14 @@ createApp({
                                 <div class="room-label">{{ getRoomLabel(room) }}</div>
                                 <div class="room-info-right">
                                     <div v-if="room.isStart" class="start-flag">🏁</div>
+                                    <div v-else-if="room.isExit && room.isVisited" class="exit-flag">🏁</div>
                                     <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">-{{ room.pointsCost }}</div>
                                     <div v-else-if="!room.isExit" class="cost-hidden">???</div>
                                 </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="room-players-list">
-                                <div v-for="p in playersInRoom(room.id)" :key="p.id" class="player-dot">
+                                <div v-for="p in playersInRoom(room.id)" :key="p.id"
+                                     :class="['player-dot', {heartbeat: hoveredPlayer && hoveredPlayer.id === p.id, 'happy-bounce': room.isExit && room.isVisited}]">
                                     {{ p.status === 'dead' ? '💀' : p.name[0] }}
                                 </div>
                             </div>

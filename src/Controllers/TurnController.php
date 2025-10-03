@@ -115,7 +115,22 @@ class TurnController
             foreach ($players as $player) {
                 if ($player->currentRoomId === $room->id && !$room->isVisited) {
                     $room->markAsVisited();
+                    error_log("[TurnController] Salle marquée comme visitée: x={$room->positionX}, y={$room->positionY}, isExit={$room->isExit}");
                     break;
+                }
+            }
+        }
+
+        // Appliquer le coût de chaque salle à TOUS les joueurs présents
+        // (à la fin du tour pour que ce soit une surprise)
+        foreach ($rooms as $room) {
+            if ($room->pointsCost > 0) {
+                // Trouver tous les joueurs dans cette salle
+                $playersInRoom = array_filter($players, fn($p) => $p->currentRoomId === $room->id && $p->status === 'alive');
+
+                // Déduire les points à chaque joueur présent
+                foreach ($playersInRoom as $player) {
+                    $player->removePoints($room->pointsCost);
                 }
             }
         }

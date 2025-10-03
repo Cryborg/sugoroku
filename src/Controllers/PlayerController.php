@@ -195,10 +195,8 @@ class PlayerController
             // NE PAS marquer la salle comme visitée maintenant
             // On le fera à la fin du tour pour éviter de révéler les infos
 
-            // Appliquer le coût de la salle
-            if ($targetRoom->pointsCost > 0) {
-                $player->removePoints($targetRoom->pointsCost);
-            }
+            // Le coût de la salle sera appliqué à la fin du tour pour TOUS les joueurs présents
+            // (pour que ce soit une surprise)
 
             return [
                 'moved' => true,
