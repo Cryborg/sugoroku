@@ -79,6 +79,12 @@ createApp({
 
     async mounted() {
         await this.loadSavedGames();
+
+        // Si il y a des parties non terminées, afficher l'écran "Reprendre une partie" par défaut
+        const hasUnfinishedGames = this.savedGames.some(game => game.status === 'playing');
+        if (hasUnfinishedGames) {
+            this.showLoadGame = true;
+        }
     },
 
     methods: {
