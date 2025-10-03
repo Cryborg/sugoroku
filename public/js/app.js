@@ -968,9 +968,11 @@ createApp({
                     <div v-if="hoveredPlayer" class="player-controls-overlay" :style="controlsStyle"
                          @mouseenter="onControlsEnter"
                          @mouseleave="onControlsLeave">
-                        <!-- Nom et avatar du joueur -->
+                        <!-- Avatar dans le cercle central -->
+                        <img :src="'avatars/' + (hoveredPlayer.gender || 'male') + '/' + (hoveredPlayer.avatar || 'male_01.png')" class="player-controls-center-avatar" :alt="hoveredPlayer.name">
+
+                        <!-- Nom du joueur -->
                         <div class="player-controls-name">
-                            <img :src="'avatars/' + (hoveredPlayer.gender || 'male') + '/' + (hoveredPlayer.avatar || 'male_01.png')" class="player-controls-avatar" :alt="hoveredPlayer.name">
                             <span>{{ hoveredPlayer.name }}</span>
                         </div>
 

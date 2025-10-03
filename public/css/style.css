@@ -1982,6 +1982,21 @@ button:disabled {
     pointer-events: auto;
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
     border: 2px solid rgba(59, 130, 246, 0.3);
+    z-index: 1;
+}
+
+.player-controls-center-avatar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 162px;
+    height: 162px;
+    border-radius: 50%;
+    object-fit: cover;
+    opacity: 0.95;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .player-controls-overlay .direction-button {
@@ -1998,7 +2013,7 @@ button:disabled {
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    z-index: 1;
+    z-index: 3;
     min-width: 50px;
 }
 
@@ -2087,9 +2102,11 @@ button:disabled {
     height: 60px;
     border-radius: 50%;
     justify-content: center;
+    opacity: 0.1;
 }
 
 .player-controls-overlay .direction-center:hover {
+    opacity: 1;
     background: #0d9668;
     border-color: white;
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
@@ -2220,10 +2237,10 @@ button:disabled {
     animation: pulse 1s infinite;
 }
 
-/* Nom et avatar du joueur au-dessus des contrôles */
+/* Nom du joueur au-dessus des contrôles */
 .player-controls-name {
     position: absolute;
-    top: -130px;
+    top: -50px;
     left: 50%;
     transform: translateX(-50%);
     color: var(--text-primary);
@@ -2232,23 +2249,9 @@ button:disabled {
     white-space: nowrap;
     z-index: 2;
     pointer-events: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
     background: rgba(10, 14, 39, 0.95);
-    padding: 10px 16px;
+    padding: 8px 16px;
     border-radius: 12px;
     border: 2px solid rgba(59, 130, 246, 0.3);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
-}
-
-.player-controls-avatar {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    border: 2px solid var(--accent-primary);
 }
