@@ -316,6 +316,25 @@ button:disabled {
     background: #2563eb;
 }
 
+.btn-new-game-bottom {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-new-game-bottom:hover {
+    border-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
 /* Liste des parties sauvegardées */
 .saved-games-list {
     margin-bottom: 20px;

@@ -46,6 +46,10 @@
                     </div>
                     <button @click.stop="deleteGame(game.id)" class="btn-delete-game" title="Supprimer">🗑️</button>
                 </div>
+
+                <button @click="showLoadGame = false" class="btn-new-game-bottom">
+                    ← Créer une nouvelle partie
+                </button>
             </div>
 
             <div v-if="!showLoadGame">
