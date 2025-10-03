@@ -51,12 +51,23 @@ body {
 .registration-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 20px;
 }
 
-.registration-header > div {
+.logo-container {
     flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.game-logo {
+    width: 100%;
+    max-width: 400px;
+    height: 120px;
+    object-fit: cover;
+    object-position: center 35%;
+    border-radius: 8px;
 }
 
 .registration-screen h1 {

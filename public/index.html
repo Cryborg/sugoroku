@@ -13,14 +13,15 @@
         <!-- Écran d'enregistrement des joueurs -->
         <div v-if="screen === 'registration'" class="registration-screen">
             <div class="registration-header">
-                <div>
-                    <h1>🚪 Trapped</h1>
-                    <p class="subtitle">Enregistrez les joueurs (3-8)</p>
+                <div class="logo-container">
+                    <img src="assets/logo.png" alt="Trapped" class="game-logo">
                 </div>
                 <button @click="toggleHelp" class="btn-help-registration" title="Aide">
                     ?
                 </button>
             </div>
+
+            <p class="subtitle">Enregistrez les joueurs (3-8)</p>
 
             <button @click="showLoadGame = !showLoadGame" class="btn-load-game">
                 {{ showLoadGame ? 'Nouvelle partie' : 'Reprendre une partie' }}
