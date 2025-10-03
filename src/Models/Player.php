@@ -3,6 +3,7 @@
 namespace Trapped\Models;
 
 use PDO;
+use Trapped\Config;
 use Trapped\Database\Database;
 
 /**
@@ -15,7 +16,7 @@ class Player
     public ?int $id = null;
     public int $gameId;
     public string $name;
-    public int $points = 15;
+    public int $points = Config::PLAYER_STARTING_POINTS;
     public ?int $currentRoomId = null;
     public string $status = 'alive'; // alive, dead, blocked, winner
     public string $createdAt;
@@ -108,7 +109,7 @@ class Player
      */
     public function addPoints(int $amount): bool
     {
-        return $this->updatePoints(min(15, $this->points + $amount));
+        return $this->updatePoints(min(Config::PLAYER_STARTING_POINTS, $this->points + $amount));
     }
 
     /**

@@ -83,16 +83,12 @@ Pour chaque phase (avec **timer de 60 secondes**) :
 
 | Points perdus | Nombre de pièces |
 |--------------|------------------|
-| 8            | 1                |
-| 7            | 1                |
-| 6            | 1                |
-| 5            | 2                |
-| 4            | 2                |
-| 3            | 4                |
-| 2            | 6                |
-| 1            | 6                |
+| 4            | 3                |
+| 3            | 5                |
+| 2            | 7                |
+| 1            | 8                |
 
-**Total : 25 pièces**
+**Total : 23 pièces (+ départ et arrive)**
 
 **Règle** : les pièces de **départ** et d'**arrivée** ne font **pas perdre de points** (0 point).
 

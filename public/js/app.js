@@ -2,6 +2,12 @@ const { createApp } = Vue;
 
 const API_BASE = '/api.php';
 
+// Configuration du jeu
+const GAME_CONFIG = {
+    TURN_TIMER_SECONDS: 600,  // 10 minutes par tour
+    MAX_TURNS: 15              // Nombre maximum de tours
+};
+
 createApp({
     data() {
         return {
@@ -11,7 +17,7 @@ createApp({
             error: '',
             gameId: null,
             game: null,
-            remainingTime: 600, // 10 minutes pour debug
+            remainingTime: GAME_CONFIG.TURN_TIMER_SECONDS,
             endData: null,
             pollingInterval: null,
             timerInterval: null,
@@ -130,12 +136,6 @@ createApp({
                 const data = await response.json();
 
                 if (data.success) {
-                    // Logger les positions des joueurs pour debug
-                    console.log('=== UPDATE STATE ===');
-                    data.data.players.forEach(p => {
-                        console.log(`Player ${p.name}: room ${p.currentRoomId}, hasChosen: ${p.hasChosen}`);
-                    });
-
                     // Forcer la réactivité en créant un nouvel objet
                     this.game = { ...data.data };
                     this.remainingTime = data.data.remainingTime;
@@ -174,7 +174,7 @@ createApp({
                 if (data.success && data.data.timerExpired) {
                     // Le tour a été résolu automatiquement
                     await this.updateGameState();
-                    this.remainingTime = 600; // Reset timer (10 min)
+                    this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
                 }
             } catch (e) {
                 console.error('Erreur auto-resolve:', e);
@@ -307,7 +307,6 @@ createApp({
 
             // Si tous les joueurs vivants ont fait leur action, passer au tour suivant
             if (alivePlayers.length > 0 && playersWhoChose.length === alivePlayers.length) {
-                console.log('Tous les joueurs ont joué ! Passage au tour suivant...');
                 await this.nextTurn();
             }
         },
@@ -320,49 +319,13 @@ createApp({
                 const data = await response.json();
 
                 if (data.success) {
-                    console.log('=== TOUR SUIVANT ===');
-                    console.log('Nouveau tour:', data.data.newTurn);
                     await this.updateGameState();
-                    this.remainingTime = 600; // Reset timer
+                    this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
                 } else {
                     console.error('Erreur passage tour:', data.error);
                 }
             } catch (e) {
                 console.error('Erreur passage tour:', e);
-            }
-        },
-
-        async resolveTurn() {
-            try {
-                const response = await fetch(`${API_BASE}/turn/${this.gameId}/force-resolve`, {
-                    method: 'POST'
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    console.log('=== TOUR RÉSOLU ===');
-                    console.log('Tour résolu:', data.data.turnResolved);
-                    console.log('Mouvements:', data.data.movements);
-                    console.log('Joueurs bloqués:', data.data.blockedPlayers);
-                    console.log('Prochain tour:', data.data.nextTurn);
-
-                    // Afficher un résumé des mouvements
-                    if (data.data.movements.length > 0) {
-                        const summary = data.data.movements.map(m =>
-                            `${m.playerName} → ${m.direction}`
-                        ).join('\n');
-                        alert(`Tour ${data.data.turnResolved} résolu !\n\nDéplacements:\n${summary}`);
-                    } else {
-                        alert(`Tour ${data.data.turnResolved} résolu !\n\nAucun déplacement.`);
-                    }
-
-                    await this.updateGameState();
-                    this.remainingTime = 600; // Reset timer
-                } else {
-                    alert(data.error);
-                }
-            } catch (e) {
-                console.error('Erreur résolution tour:', e);
             }
         },
 
@@ -380,7 +343,7 @@ createApp({
             this.error = '';
             this.gameId = null;
             this.game = null;
-            this.remainingTime = 600; // 10 min
+            this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
             this.endData = null;
         },
 
@@ -448,6 +411,9 @@ createApp({
                         p.currentRoomId === exitRoom.id &&
                         p.points >= 1
                     );
+                },
+                maxTurns() {
+                    return GAME_CONFIG.MAX_TURNS;
                 }
             },
             methods: {
@@ -480,7 +446,18 @@ createApp({
                         this.hideTimeout = null;
                     }
                     const rect = event.currentTarget.getBoundingClientRect();
-                    this.popupStyle.top = `${rect.top}px`;
+
+                    // Calculer la position de la popup en évitant qu'elle sorte de l'écran
+                    const popupHeight = 400; // Hauteur approximative de la popup
+                    const viewportHeight = window.innerHeight;
+
+                    // Si la popup dépasserait en bas, la positionner au-dessus
+                    if (rect.bottom + popupHeight > viewportHeight) {
+                        this.popupStyle.top = `${Math.max(10, rect.bottom - popupHeight)}px`;
+                    } else {
+                        this.popupStyle.top = `${rect.top}px`;
+                    }
+
                     this.hoveredPlayer = player;
                 },
                 onPlayerMouseLeave() {
@@ -545,12 +522,10 @@ createApp({
                     return playersWhoChose.length >= door.diceResult;
                 },
                 openDoorAction(doorId, playerId) {
-                    console.log('Opening door', doorId, 'for player', playerId);
                     this.$emit('open-door', doorId, playerId);
                     this.hoveredPlayer = null; // Fermer la popup
                 },
                 chooseDoorAction(doorId, playerId) {
-                    console.log('Choosing door', doorId, 'for player', playerId);
                     this.$emit('choose-door', playerId, doorId);
                     this.hoveredPlayer = null; // Fermer la popup
                 },
@@ -564,7 +539,7 @@ createApp({
                     <div class="players-panel">
                         <div class="timer-panel">
                             <div class="timer-section">
-                                <div class="turn-label">Tour {{ game.currentTurn }}/15</div>
+                                <div class="turn-label">Tour {{ game.currentTurn }}/{{ maxTurns }}</div>
                                 <div :class="['timer-display', {danger: remainingTime < 60}]">
                                     ⏱️ {{ formatTime(remainingTime) }}
                                 </div>
@@ -708,7 +683,9 @@ createApp({
                                 </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="room-players-list">
-                                <div v-for="p in playersInRoom(room.id)" :key="p.id" class="player-dot">{{ p.name[0] }}</div>
+                                <div v-for="p in playersInRoom(room.id)" :key="p.id" class="player-dot">
+                                    {{ p.status === 'dead' ? '💀' : p.name[0] }}
+                                </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="doors-container">
                                 <div v-for="door in room.doors" :key="door.id" :class="['door-widget', door.direction]" :style="{borderColor: doorColors[door.direction].color}">

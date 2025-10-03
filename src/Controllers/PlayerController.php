@@ -186,8 +186,6 @@ class PlayerController
         $capacity = $door->getCapacity();
         $remainingCapacity = $capacity - $alreadyPassedCount;
 
-        error_log("Door {$door->id}: capacity={$capacity}, already passed={$alreadyPassedCount}, remaining={$remainingCapacity}");
-
         if ($remainingCapacity > 0) {
             // Il reste de la place, le joueur passe
 
@@ -202,8 +200,6 @@ class PlayerController
                 $player->removePoints($targetRoom->pointsCost);
             }
 
-            error_log("Player {$player->id} moved to room {$targetRoom->id}");
-
             return [
                 'moved' => true,
                 'newRoomId' => $targetRoom->id,
@@ -212,7 +208,6 @@ class PlayerController
         } else {
             // Porte pleine, le joueur est bloqué
             $player->updateStatus('blocked');
-            error_log("Player {$player->id} BLOCKED - door full");
 
             return [
                 'moved' => false,

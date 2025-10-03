@@ -108,18 +108,6 @@ function route(string $method, string $uri, array $input): array
         return $controller->getAllChoices((int) $parts[1]);
     }
 
-    // POST /turn/{gameId}/resolve
-    if ($method === 'POST' && $parts[0] === 'turn' && $parts[2] === 'resolve') {
-        $controller = new TurnController();
-        return $controller->resolveTurn((int) $parts[1]);
-    }
-
-    // POST /turn/{gameId}/force-resolve
-    if ($method === 'POST' && $parts[0] === 'turn' && $parts[2] === 'force-resolve') {
-        $controller = new TurnController();
-        return $controller->forceResolve((int) $parts[1]);
-    }
-
     // GET /turn/{gameId}/check
     if ($method === 'GET' && $parts[0] === 'turn' && $parts[2] === 'check') {
         $controller = new TurnController();

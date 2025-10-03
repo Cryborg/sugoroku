@@ -2,6 +2,7 @@
 
 namespace Trapped\Controllers;
 
+use Trapped\Config;
 use Trapped\Models\Game;
 use Trapped\Models\Player;
 use Trapped\Models\Room;
@@ -162,8 +163,8 @@ class GameController
             ]);
         }
 
-        // Si tour 15 atteint et personne n'a gagné
-        if ($game->currentTurn >= 15) {
+        // Si tour max atteint et personne n'a gagné
+        if ($game->currentTurn >= Config::MAX_TURNS) {
             $game->finish();
             return $this->success([
                 'gameOver' => true,
@@ -174,7 +175,7 @@ class GameController
         }
 
         // Si tous les joueurs sont morts
-        if (count($alive) === 0 && count($winners) === 0) {
+        if (count($alive) === 0 && count($playersInExit) === 0) {
             $game->finish();
             return $this->success([
                 'gameOver' => true,

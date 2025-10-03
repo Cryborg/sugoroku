@@ -3,6 +3,7 @@
 namespace Trapped\Models;
 
 use PDO;
+use Trapped\Config;
 use Trapped\Database\Database;
 
 /**
@@ -80,10 +81,11 @@ class Door
     /**
      * Lance le dé pour cette porte (nombre de faces = nombre de joueurs + 1)
      */
-    public function rollDice(int $turnNumber, int $numberOfPlayers = 10): int
+    public function rollDice(int $turnNumber, int $numberOfPlayers = Config::DEFAULT_DICE_FACES): int
     {
-        // Par défaut D10 si pas de nombre de joueurs, sinon D(joueurs+1)
-        $maxValue = max(1, $numberOfPlayers); // Minimum D2 (0-1)
+        // Dé avec (nombre de joueurs + 1) faces : D(joueurs+1)
+        // Exemple : 1 joueur → D2 (0-2), 2 joueurs → D3 (0-3)
+        $maxValue = max(1, $numberOfPlayers) + 1;
         $this->diceResult = rand(0, $maxValue);
         $this->currentTurn = $turnNumber;
         $this->save();
@@ -168,39 +170,6 @@ class Door
         }
 
         return $players;
-    }
-
-    /**
-     * Résout le passage des joueurs par cette porte (avec lockdown si nécessaire)
-     */
-    public function resolvePassage(int $turnNumber): array
-    {
-        $players = $this->getPlayerChoices($turnNumber);
-        $capacity = $this->getCapacity();
-
-        $result = [
-            'passed' => [],
-            'blocked' => []
-        ];
-
-        // Si la porte n'est pas ouverte, personne ne passe
-        if (!$this->isOpen()) {
-            $result['blocked'] = $players;
-            return $result;
-        }
-
-        // Si le nombre de joueurs <= capacité, tous passent
-        if (count($players) <= $capacity) {
-            $result['passed'] = $players;
-            return $result;
-        }
-
-        // Sinon, sélection aléatoire (lockdown)
-        shuffle($players);
-        $result['passed'] = array_slice($players, 0, $capacity);
-        $result['blocked'] = array_slice($players, $capacity);
-
-        return $result;
     }
 
     /**

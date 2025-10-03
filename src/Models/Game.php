@@ -3,6 +3,7 @@
 namespace Trapped\Models;
 
 use PDO;
+use Trapped\Config;
 use Trapped\Database\Database;
 
 /**
@@ -95,7 +96,7 @@ class Game
      */
     public function nextTurn(): bool
     {
-        if ($this->currentTurn >= 15) {
+        if ($this->currentTurn >= Config::MAX_TURNS) {
             return $this->finish();
         }
 
@@ -139,13 +140,13 @@ class Game
     public function getRemainingTime(): int
     {
         if (!$this->turnStartedAt) {
-            return 600; // 10 minutes pour debug
+            return Config::TURN_TIMER_SECONDS;
         }
 
         $start = strtotime($this->turnStartedAt);
         $now = time();
         $elapsed = $now - $start;
-        $remaining = 600 - $elapsed; // 10 minutes pour debug
+        $remaining = Config::TURN_TIMER_SECONDS - $elapsed;
 
         return max(0, $remaining);
     }
@@ -201,7 +202,7 @@ class Game
     {
         // Distribution des points selon le cahier des charges
         $pointsDistribution = [
-            8 => 1, 7 => 1, 6 => 1, 5 => 2, 4 => 2, 3 => 4, 2 => 6, 1 => 6
+            4 => 3, 3 => 5, 2 => 7, 1 => 8
         ];
 
         $pointsPool = [];
@@ -227,18 +228,18 @@ class Game
             if (rand(0, 1) === 0) {
                 // Ligne C (y=2) : toutes les colonnes (x=0 à 4)
                 $startY = 2; // Ligne C
-                $startX = rand(0, 4); // Colonnes 1 à 5
+                $startX = rand(0, Config::GRID_SIZE - 1);
             } else {
                 // Colonne 3 (x=2) : toutes les lignes (y=0 à 4)
                 $startX = 2; // Colonne 3
-                $startY = rand(0, 4); // Lignes A à E
+                $startY = rand(0, Config::GRID_SIZE - 1);
             }
         } while ($startX === $exitCorner[0] && $startY === $exitCorner[1]); // Garantit que départ ≠ sortie
 
-        // Générer les 25 pièces
+        // Générer les pièces
         $index = 0;
-        for ($y = 0; $y < 5; $y++) {
-            for ($x = 0; $x < 5; $x++) {
+        for ($y = 0; $y < Config::GRID_SIZE; $y++) {
+            for ($x = 0; $x < Config::GRID_SIZE; $x++) {
                 $room = new Room();
                 $room->gameId = $this->id;
                 $room->positionX = $x;
