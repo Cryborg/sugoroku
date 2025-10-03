@@ -12,8 +12,15 @@
     <div id="app">
         <!-- Écran d'enregistrement des joueurs -->
         <div v-if="screen === 'registration'" class="registration-screen">
-            <h1>🚪 Trapped</h1>
-            <p class="subtitle">Enregistrez les joueurs (3-8)</p>
+            <div class="registration-header">
+                <div>
+                    <h1>🚪 Trapped</h1>
+                    <p class="subtitle">Enregistrez les joueurs (3-8)</p>
+                </div>
+                <button @click="toggleHelp" class="btn-help-registration" title="Aide">
+                    ?
+                </button>
+            </div>
 
             <button @click="showLoadGame = !showLoadGame" class="btn-load-game">
                 {{ showLoadGame ? 'Nouvelle partie' : 'Reprendre une partie' }}
@@ -102,6 +109,7 @@
                 @stay-in-room="stayInRoom"
                 @give-up="giveUp"
                 @go-home="goHome"
+                @toggle-help="toggleHelp"
             ></game-board>
         </div>
 
@@ -165,6 +173,82 @@
                 <div class="modal-actions">
                     <button @click="cancelModal" class="btn-modal-cancel">{{ modalData.cancelText }}</button>
                     <button @click="confirmModal" class="btn-modal-confirm">{{ modalData.confirmText }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modale d'aide -->
+        <div v-if="showHelp" class="modal-overlay" @click="toggleHelp">
+            <div class="modal-content modal-help" @click.stop>
+                <button @click="toggleHelp" class="btn-close-modal">×</button>
+                <h2>🚪 Comment jouer à Trapped</h2>
+
+                <div class="help-section">
+                    <h3>🎯 Objectif</h3>
+                    <p><strong>Jeu collaboratif :</strong> Faire sortir un maximum de joueurs ! Tous les joueurs vivants doivent atteindre la salle de sortie avec au moins 1 point. En cas d'égalité, le joueur avec le plus de bonheur gagne.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>⚙️ Déroulement</h3>
+                    <ul>
+                        <li><strong>Tour par tour :</strong> Vous avez 2 minutes par tour pour faire votre choix</li>
+                        <li><strong>15 tours maximum</strong> pour sortir, sinon c'est perdu pour tout le monde</li>
+                        <li>Choisissez une porte ou restez dans votre salle actuelle</li>
+                        <li>Tous les joueurs jouent simultanément à chaque tour</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>🚪 Les portes et leur capacité</h3>
+                    <ul>
+                        <li><strong>Portes fermées :</strong> Coûtent 1 point à ouvrir (premier joueur à choisir)</li>
+                        <li><strong>Portes ouvertes :</strong> Gratuites pour les suivants</li>
+                        <li><strong>Capacité (le chiffre) :</strong> Indique combien de joueurs peuvent franchir cette porte <strong>pendant le tour actuel</strong></li>
+                        <li>Si le nombre maximum de joueurs est atteint, la porte est pleine et plus personne ne peut la choisir</li>
+                        <li><strong>Bonheur :</strong> Chaque porte donne ou enlève du bonheur (invisible jusqu'à l'ouverture)</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>💰 Points et salles</h3>
+                    <ul>
+                        <li>Chaque salle coûte des points pour y entrer (sauf la sortie)</li>
+                        <li>Le coût est caché jusqu'à ce qu'un joueur visite la salle</li>
+                        <li><strong>0 point = vous êtes mort !</strong></li>
+                        <li>Certaines salles peuvent être gratuites (si activé)</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>😊 Le bonheur</h3>
+                    <p>Si plusieurs joueurs atteignent la sortie, celui avec le <strong>plus de bonheur total</strong> gagne. Le bonheur est influencé par les portes que vous franchissez.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>🎮 Actions possibles</h3>
+                    <ul>
+                        <li><strong>Choisir une porte :</strong> Cliquez sur votre badge puis sur une flèche directionnelle</li>
+                        <li><strong>Rester ici :</strong> Cliquez sur votre badge puis sur le bouton central</li>
+                        <li><strong>Libérer un joueur :</strong> Si vous êtes à la sortie, vous pouvez abandonner pour sauver quelqu'un de bloqué</li>
+                        <li><strong>Abandonner :</strong> Si quelqu'un est déjà sorti, vous pouvez abandonner</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>📊 Niveaux de difficulté</h3>
+                    <ul>
+                        <li><strong>Facile :</strong> 25 points de départ</li>
+                        <li><strong>Normal :</strong> 20 points de départ</li>
+                        <li><strong>Difficile :</strong> 15 points de départ</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>🏁 Conditions de victoire</h3>
+                    <ul>
+                        <li>✅ Tous les joueurs vivants atteignent la sortie</li>
+                        <li>❌ Défaite si le temps expire (15 tours) ou si tous les joueurs meurent</li>
+                    </ul>
                 </div>
             </div>
         </div>

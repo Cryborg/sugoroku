@@ -4,8 +4,8 @@ const API_BASE = 'api.php';
 
 // Configuration du jeu
 const GAME_CONFIG = {
-    TURN_TIMER_SECONDS: 600,  // 10 minutes par tour
-    MAX_TURNS: 15              // Nombre maximum de tours
+    TURN_TIMER_SECONDS: 120,  // 2 minutes par tour
+    MAX_TURNS: 15             // Nombre maximum de tours
 };
 
 createApp({
@@ -41,7 +41,8 @@ createApp({
                 confirmText: 'Confirmer',
                 cancelText: 'Annuler',
                 onConfirm: null
-            }
+            },
+            showHelp: false
         };
     },
 
@@ -89,6 +90,10 @@ createApp({
 
         cancelModal() {
             this.showModal = false;
+        },
+
+        toggleHelp() {
+            this.showHelp = !this.showHelp;
         },
 
         // Charger la liste des parties sauvegardées
@@ -252,7 +257,7 @@ createApp({
                 await this.updateGameState();
                 await this.checkEndConditions();
                 await this.checkNextTurn(); // Vérifier si on doit passer au tour suivant
-            }, 5000); // Poll toutes les 5 secondes
+            }, 2000); // Poll toutes les 2 secondes
         },
 
         stopPolling() {
@@ -852,10 +857,15 @@ createApp({
                 <div class="game-container-fullscreen">
                     <!-- Header avec timer et infos -->
                     <div class="game-header">
-                        <!-- Bouton retour -->
-                        <button @click="$emit('go-home')" class="btn-home" title="Retour à l'accueil">
-                            🏠
-                        </button>
+                        <!-- Boutons navigation -->
+                        <div class="game-nav-buttons">
+                            <button @click="$emit('go-home')" class="btn-home" title="Retour à l'accueil">
+                                🏠
+                            </button>
+                            <button @click="$emit('toggle-help')" class="btn-help" title="Aide">
+                                ?
+                            </button>
+                        </div>
 
                         <!-- Tour -->
                         <div class="turn-section">
