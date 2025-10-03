@@ -15,9 +15,9 @@ class GameController
     /**
      * Crée une nouvelle partie
      */
-    public function create(array $playerNames, string $difficulty = 'normal', bool $freeRoomsEnabled = false): array
+    public function create(array $players, string $difficulty = 'normal', bool $freeRoomsEnabled = false): array
     {
-        if (count($playerNames) < 3 || count($playerNames) > 8) {
+        if (count($players) < 3 || count($players) > 8) {
             return $this->error('Le nombre de joueurs doit être entre 3 et 8');
         }
 
@@ -56,15 +56,26 @@ class GameController
         }
 
         // Créer les joueurs
-        foreach ($playerNames as $name) {
+        foreach ($players as $playerData) {
             $player = new Player();
             $player->gameId = $game->id;
-            $player->name = trim($name);
+
+            // Support both old format (string) and new format (object)
+            if (is_string($playerData)) {
+                $player->name = trim($playerData);
+                $player->gender = 'male';
+                $player->avatar = 'male_01.png';
+            } else {
+                $player->name = trim($playerData['name']);
+                $player->gender = $playerData['gender'] ?? 'male';
+                $player->avatar = $playerData['avatar'] ?? 'male_01.png';
+            }
+
             $player->currentRoomId = $startRoom->id;
             $player->points = $startingPoints;
 
             if (!$player->create()) {
-                return $this->error("Impossible de créer le joueur {$name}");
+                return $this->error("Impossible de créer le joueur {$player->name}");
             }
         }
 
@@ -201,6 +212,69 @@ class GameController
         return $this->success([
             'gameOver' => false
         ]);
+    }
+
+    /**
+     * Liste toutes les parties (en cours ou terminées)
+     */
+    public function listGames(): array
+    {
+        $db = \Trapped\Database\Database::getInstance();
+
+        $stmt = $db->query("
+            SELECT
+                g.id,
+                g.created_at,
+                g.current_turn,
+                g.status,
+                g.starting_points,
+                COUNT(DISTINCT p.id) as player_count,
+                GROUP_CONCAT(p.name, ', ') as player_names
+            FROM games g
+            LEFT JOIN players p ON p.game_id = g.id
+            WHERE g.status IN ('playing', 'finished')
+            GROUP BY g.id
+            ORDER BY g.created_at DESC
+            LIMIT 50
+        ");
+
+        $games = [];
+        while ($row = $stmt->fetch()) {
+            $games[] = [
+                'id' => (int) $row['id'],
+                'createdAt' => $row['created_at'],
+                'currentTurn' => (int) $row['current_turn'],
+                'status' => $row['status'],
+                'startingPoints' => (int) $row['starting_points'],
+                'playerCount' => (int) $row['player_count'],
+                'playerNames' => $row['player_names']
+            ];
+        }
+
+        return $this->success($games);
+    }
+
+    /**
+     * Supprime une partie et toutes ses données associées
+     */
+    public function deleteGame(int $gameId): array
+    {
+        $db = \Trapped\Database\Database::getInstance();
+
+        // Vérifier que la partie existe
+        $stmt = $db->prepare("SELECT id FROM games WHERE id = ?");
+        $stmt->execute([$gameId]);
+        if (!$stmt->fetch()) {
+            return $this->error('Partie introuvable');
+        }
+
+        // Supprimer la partie (les cascades supprimeront automatiquement les données liées)
+        $stmt = $db->prepare("DELETE FROM games WHERE id = ?");
+        if ($stmt->execute([$gameId])) {
+            return $this->success(['message' => 'Partie supprimée avec succès']);
+        }
+
+        return $this->error('Impossible de supprimer la partie');
     }
 
     /**

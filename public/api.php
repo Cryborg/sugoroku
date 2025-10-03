@@ -19,8 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Récupérer la méthode et l'URI
 $method = $_SERVER['REQUEST_METHOD'];
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$uri = str_replace('/api.php', '', $uri);
+
+// Gérer les deux formats : PATH_INFO (prod) et QUERY_STRING (local)
+if (!empty($_SERVER['QUERY_STRING']) && strpos($_SERVER['QUERY_STRING'], '/') === 0) {
+    // Format local : api.php?/game/create
+    $uri = $_SERVER['QUERY_STRING'];
+} else {
+    // Format prod : /path/to/api.php/game/create
+    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    // Nettoyer l'URI pour enlever le préfixe du dossier et api.php
+    $uri = str_replace('/api.php', '', $uri);
+    $scriptPath = dirname($_SERVER['SCRIPT_NAME']);
+    if ($scriptPath !== '/') {
+        $uri = str_replace($scriptPath, '', $uri);
+    }
+    $uri = '/' . ltrim($uri, '/');
+}
 
 // Récupérer les données POST/PUT
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -122,6 +137,18 @@ function route(string $method, string $uri, array $input): array
     if ($method === 'POST' && $parts[0] === 'turn' && $parts[2] === 'next') {
         $controller = new TurnController();
         return $controller->nextTurn((int) $parts[1]);
+    }
+
+    // GET /games/list
+    if ($method === 'GET' && $parts[0] === 'games' && $parts[1] === 'list') {
+        $controller = new GameController();
+        return $controller->listGames();
+    }
+
+    // DELETE /game/{id}/delete
+    if ($method === 'DELETE' && $parts[0] === 'game' && $parts[2] === 'delete') {
+        $controller = new GameController();
+        return $controller->deleteGame((int) $parts[1]);
     }
 
     // Route non trouvée

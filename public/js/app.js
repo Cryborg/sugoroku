@@ -1,19 +1,32 @@
 const { createApp } = Vue;
 
-const API_BASE = '/api.php';
+// Détection de l'environnement pour l'API
+// En local (localhost ou 127.0.0.1 avec port), on utilise le format query string
+// En prod, on utilise le format PATH_INFO
+const isLocal = window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.port !== '';
+
+const API_BASE = isLocal ? 'api.php?' : 'api.php';
 
 // Configuration du jeu
 const GAME_CONFIG = {
-    TURN_TIMER_SECONDS: 600,  // 10 minutes par tour
-    MAX_TURNS: 15              // Nombre maximum de tours
+    TURN_TIMER_SECONDS: 120,  // 2 minutes par tour
+    MAX_TURNS: 15             // Nombre maximum de tours
 };
 
 createApp({
     data() {
         return {
             screen: 'registration', // registration, game, end
-            players: JSON.parse(localStorage.getItem('trapped_players') || '[]'), // Charger depuis localStorage
+            players: JSON.parse(localStorage.getItem('trapped_players') || '[]'),
             newPlayerName: '',
+            tempAvatar: null,
+            tempGender: 'male',
+            tempAvatarType: 'adult',  // adult ou child
+            showAvatarPicker: false,
+            avatarPickerGender: 'male',
+            avatarPickerType: 'adult',  // adult ou child
             error: '',
             gameId: null,
             game: null,
@@ -31,7 +44,18 @@ createApp({
             pointsLossData: null,
             playersPointsAtTurnStart: {},  // Points au début de chaque tour
             difficulty: localStorage.getItem('trapped_difficulty') || 'normal',
-            freeRoomsEnabled: localStorage.getItem('trapped_freeRooms') === 'true'
+            freeRoomsEnabled: localStorage.getItem('trapped_freeRooms') === 'true',
+            showLoadGame: false,
+            savedGames: [],
+            showModal: false,
+            modalData: {
+                title: '',
+                message: '',
+                confirmText: 'Confirmer',
+                cancelText: 'Annuler',
+                onConfirm: null
+            },
+            showHelp: false
         };
     },
 
@@ -53,25 +77,175 @@ createApp({
         }
     },
 
+    async mounted() {
+        await this.loadSavedGames();
+
+        // Si il y a des parties non terminées, afficher l'écran "Reprendre une partie" par défaut
+        const hasUnfinishedGames = this.savedGames.some(game => game.status === 'playing');
+        if (hasUnfinishedGames) {
+            this.showLoadGame = true;
+        }
+    },
+
     methods: {
+        // Système de modale
+        showConfirmModal(title, message, onConfirm, confirmText = 'Confirmer', cancelText = 'Annuler') {
+            this.modalData = {
+                title,
+                message,
+                confirmText,
+                cancelText,
+                onConfirm
+            };
+            this.showModal = true;
+        },
+
+        confirmModal() {
+            if (this.modalData.onConfirm) {
+                this.modalData.onConfirm();
+            }
+            this.showModal = false;
+        },
+
+        cancelModal() {
+            this.showModal = false;
+        },
+
+        toggleHelp() {
+            this.showHelp = !this.showHelp;
+        },
+
+        // Charger la liste des parties sauvegardées
+        async loadSavedGames() {
+            try {
+                const response = await fetch(`${API_BASE}/games/list`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.savedGames = data.data;
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des parties:', error);
+            }
+        },
+
+        // Charger une partie existante
+        async loadGame(gameId) {
+            try {
+                const response = await fetch(`${API_BASE}/game/${gameId}/state`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.gameId = gameId;
+                    this.game = data.data;
+                    this.screen = 'game';
+                    this.startTimer();
+                    this.startPolling();
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement de la partie:', error);
+                this.error = 'Impossible de charger la partie';
+            }
+        },
+
+        // Supprimer une partie
+        async deleteGame(gameId) {
+            this.showConfirmModal(
+                'Supprimer la partie',
+                'Êtes-vous sûr de vouloir supprimer cette partie ?',
+                async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/game/${gameId}/delete`, {
+                            method: 'DELETE'
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            await this.loadSavedGames();
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la suppression:', error);
+                        this.error = 'Impossible de supprimer la partie';
+                    }
+                },
+                'Supprimer',
+                'Annuler'
+            );
+        },
+
+        // Formater une date
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+
         // Enregistrement des joueurs
         addPlayer() {
             const name = this.newPlayerName.trim();
-            if (!name) return;
+            if (!name || !this.tempAvatar) return;
 
             if (this.players.length >= 8) {
                 this.error = 'Maximum 8 joueurs';
                 return;
             }
 
-            if (this.players.includes(name)) {
+            if (this.players.some(p => p.name === name)) {
                 this.error = 'Ce nom est déjà pris';
                 return;
             }
 
-            this.players.push(name);
+            this.players.push({
+                name: name,
+                gender: this.tempGender,
+                avatar: this.tempAvatar
+            });
+
             this.newPlayerName = '';
+            this.tempAvatar = null;
+            this.tempGender = 'male';
             this.error = '';
+        },
+
+        openAvatarPicker() {
+            this.avatarPickerGender = this.tempGender || 'male';
+            this.avatarPickerType = this.tempAvatarType || 'adult';
+            this.showAvatarPicker = true;
+        },
+
+        selectAvatar(gender, avatarNumber, type) {
+            const prefix = type === 'child' ? 'children' : gender;
+            const avatarName = `${prefix}_${String(avatarNumber).padStart(2, '0')}.png`;
+
+            // Vérifier si l'avatar est déjà utilisé
+            if (this.players.some(p => p.gender === gender && p.avatar === avatarName)) {
+                return; // Ne permet pas de sélectionner un avatar déjà utilisé
+            }
+
+            this.tempAvatar = avatarName;
+            this.tempGender = gender;
+            this.tempAvatarType = type;
+            this.showAvatarPicker = false;
+        },
+
+        isAvatarUsed(gender, avatarNumber, type) {
+            const prefix = type === 'child' ? 'children' : gender;
+            const avatarName = `${prefix}_${String(avatarNumber).padStart(2, '0')}.png`;
+            return this.players.some(p => p.gender === gender && p.avatar === avatarName);
+        },
+
+        getAvatarCount(gender, type) {
+            if (type === 'child') {
+                // 23 filles enfants, 25 garçons enfants
+                return gender === 'female' ? 23 : 25;
+            }
+            // 24 femmes adultes, 23 hommes adultes
+            return gender === 'female' ? 24 : 23;
         },
 
         removePlayer(index) {
@@ -163,7 +337,7 @@ createApp({
                 if (data.success) {
                     // Forcer la réactivité en créant un nouvel objet
                     this.game = { ...data.data };
-                    this.remainingTime = data.data.remainingTime;
+                    // Ne pas écraser le timer local qui tourne déjà côté client
                 }
             } catch (e) {
                 console.error('Erreur de polling:', e);
@@ -266,27 +440,47 @@ createApp({
             }
         },
 
+        async goHome(skipConfirmation = false) {
+            const doGoHome = async () => {
+                this.stopPolling();
+                this.stopTimer();
+                this.screen = 'registration';
+                this.gameId = null;
+                this.game = null;
+                await this.loadSavedGames();
+            };
+
+            if (skipConfirmation) {
+                await doGoHome();
+            } else {
+                this.showConfirmModal(
+                    'Retour à l\'accueil',
+                    'Êtes-vous sûr de vouloir retourner à l\'accueil ? La partie est sauvegardée automatiquement.',
+                    doGoHome
+                );
+            }
+        },
+
         async giveUp(playerId) {
-            if (!confirm('Êtes-vous sûr de vouloir abandonner la partie ?')) {
-                return;
-            }
+            this.showConfirmModal(
+                'Abandonner',
+                'Êtes-vous sûr de vouloir abandonner la partie ?',
+                async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/player/${playerId}/give-up`, {
+                            method: 'POST'
+                        });
 
-            try {
-                const response = await fetch(`${API_BASE}/player/${playerId}/give-up`, {
-                    method: 'POST'
-                });
+                        const data = await response.json();
 
-                const data = await response.json();
-
-                if (data.success) {
-                    await this.updateGameState();
-                    alert(data.data.message);
-                } else {
-                    alert(data.error);
+                        if (data.success) {
+                            await this.updateGameState();
+                        }
+                    } catch (e) {
+                        console.error('Erreur abandon:', e);
+                    }
                 }
-            } catch (e) {
-                console.error('Erreur abandon:', e);
-            }
+            );
         },
 
         async freePlayer(liberatorId, blockedPlayerId) {
@@ -339,12 +533,10 @@ createApp({
                     id: p.id,
                     name: p.name,
                     points: this.playersPointsAtTurnStart[p.id] ?? p.points,
-                    animatedPoints: this.playersPointsAtTurnStart[p.id] ?? p.points
+                    animatedPoints: this.playersPointsAtTurnStart[p.id] ?? p.points,
+                    gender: p.gender,
+                    avatar: p.avatar
                 }));
-
-                console.log(`[checkNextTurn] Tour ${currentTurn} terminé`);
-                console.log(`[checkNextTurn] Points AVANT (début tour):`, playersBeforeTurn.map(p => `${p.name}: ${p.points}`));
-                console.log(`[checkNextTurn] Points ACTUELS (avant nextTurn):`, this.game.players.map(p => `${p.name}: ${p.points}`));
 
                 // Appeler nextTurn pour passer au tour suivant (déduit les points de salle côté serveur)
                 await this.nextTurn();
@@ -355,8 +547,6 @@ createApp({
                     name: p.name,
                     points: p.points
                 }));
-
-                console.log(`[checkNextTurn] Points APRÈS (après nextTurn):`, playersAfterTurn.map(p => `${p.name}: ${p.points}`));
 
                 // Afficher la popup de perte de points
                 await this.showPointsLoss(currentTurn, playersBeforeTurn, playersAfterTurn);
@@ -375,8 +565,6 @@ createApp({
                     this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
 
                     // Sauvegarder les points du NOUVEAU tour (pour la prochaine fois)
-                    console.log(`[nextTurn] Sauvegarde des points pour le tour ${this.game.currentTurn}:`, this.game.players.map(p => `${p.name}: ${p.points}`));
-                    console.log(`[nextTurn] Salles visitées:`, this.game.rooms.filter(r => r.isVisited).map(r => `${r.positionX},${r.positionY} (exit:${r.isExit})`));
                     this.playersPointsAtTurnStart = {};
                     this.game.players.forEach(player => {
                         this.playersPointsAtTurnStart[player.id] = player.points;
@@ -396,7 +584,7 @@ createApp({
             this.screen = 'end';
         },
 
-        resetGame() {
+        async resetGame() {
             this.screen = 'registration';
             // Ne pas réinitialiser this.players pour garder les joueurs précédents
             this.newPlayerName = '';
@@ -405,14 +593,10 @@ createApp({
             this.game = null;
             this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
             this.endData = null;
+            await this.loadSavedGames();
         },
 
         async showPointsLoss(turn, oldPlayersData, newPlayersData) {
-            const startTime = Date.now();
-            console.log(`[${Date.now() - startTime}ms] === DÉBUT showPointsLoss ===`);
-            console.log(`[${Date.now() - startTime}ms] Points d'origine:`, oldPlayersData.map(p => `${p.name}: ${p.points}`));
-            console.log(`[${Date.now() - startTime}ms] Points finaux:`, newPlayersData.map(p => `${p.name}: ${p.points}`));
-
             // Afficher la popup avec les points d'origine + calculer les pertes + statut final
             this.pointsLossData = {
                 turn,
@@ -433,10 +617,8 @@ createApp({
                 })
             };
             this.showPointsLossPopup = true;
-            console.log(`[${Date.now() - startTime}ms] Popup affichée avec points:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
 
             // Attendre 2 secondes avant de commencer la décrémentation
-            console.log(`[${Date.now() - startTime}ms] Attente 2 secondes...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Activer l'animation de perte (fade up)
@@ -451,8 +633,6 @@ createApp({
                     maxPointsToRemove = Math.max(maxPointsToRemove, diff);
                 }
             }
-
-            console.log(`[${Date.now() - startTime}ms] DÉBUT ANIMATION - maxPointsToRemove: ${maxPointsToRemove}`);
 
             // Animer chaque point un par un
             for (let i = 1; i <= maxPointsToRemove; i++) {
@@ -476,22 +656,13 @@ createApp({
                     };
                 });
 
-                if (i === 1 || i === maxPointsToRemove) {
-                    console.log(`[${Date.now() - startTime}ms] Frame ${i}/${maxPointsToRemove}:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
-                }
-
                 // 150ms entre chaque décrémentation (environ 6-7 points par seconde)
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
 
-            console.log(`[${Date.now() - startTime}ms] FIN ANIMATION`);
-            console.log(`[${Date.now() - startTime}ms] Points finaux affichés:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
-
             // Attendre 2 secondes après la fin de l'animation (temps pour le fade up de finir)
-            console.log(`[${Date.now() - startTime}ms] Attente 2 secondes avant fermeture...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            console.log(`[${Date.now() - startTime}ms] Fermeture popup`);
             this.showPointsLossPopup = false;
             this.pointsLossData = null;
         },
@@ -500,7 +671,7 @@ createApp({
         formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         },
 
         getPlayerPoints(playerId) {
@@ -533,7 +704,8 @@ createApp({
                         'west': '←'
                     },
                     hoveredPlayer: null,
-                    popupStyle: {
+                    hoveredPlayerBadge: null,
+                    controlsStyle: {
                         top: '0px',
                         left: '0px'
                     },
@@ -577,7 +749,7 @@ createApp({
                 formatTime(seconds) {
                     const mins = Math.floor(seconds / 60);
                     const secs = seconds % 60;
-                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
                 },
                 pointsClass(points) {
                     if (points <= 3) return 'critical';
@@ -593,56 +765,54 @@ createApp({
                     };
                     return labels[status] || status;
                 },
-                onPlayerMouseEnter(event, player) {
-                    // Les joueurs morts ne peuvent pas jouer
-                    if (player.status === 'dead' || player.status === 'winner') return;
-                    // Ne pas afficher la popup si le joueur a déjà fait son choix
-                    if (player.hasChosen) return;
+                onPlayerBadgeEnter(event, player) {
+                    // Les joueurs morts ou qui ont déjà choisi ne peuvent pas jouer
+                    if (player.status === 'dead' || player.status === 'winner' || player.hasChosen) return;
+
                     if (this.hideTimeout) {
                         clearTimeout(this.hideTimeout);
                         this.hideTimeout = null;
                     }
-                    const rect = event.currentTarget.getBoundingClientRect();
 
-                    // Calculer la position de la popup en évitant qu'elle sorte de l'écran
-                    const popupHeight = 400; // Hauteur approximative de la popup
-                    const popupWidth = 320; // Largeur de la popup
-                    const viewportHeight = window.innerHeight;
-                    const viewportWidth = window.innerWidth;
-                    const gap = 20; // Espace entre la carte et la popup
+                    const badge = event.currentTarget;
+                    const rect = badge.getBoundingClientRect();
 
-                    // Position verticale : Si la popup dépasserait en bas, la positionner au-dessus
-                    if (rect.bottom + popupHeight > viewportHeight) {
-                        this.popupStyle.top = `${Math.max(10, rect.bottom - popupHeight)}px`;
-                    } else {
-                        this.popupStyle.top = `${rect.top}px`;
-                    }
-
-                    // Position horizontale : À droite de la carte du joueur
-                    const leftPosition = rect.right + gap;
-
-                    // Si la popup dépasserait à droite, la positionner à gauche de la carte
-                    if (leftPosition + popupWidth > viewportWidth) {
-                        this.popupStyle.left = `${Math.max(10, rect.left - popupWidth - gap)}px`;
-                    } else {
-                        this.popupStyle.left = `${leftPosition}px`;
-                    }
+                    // Centrer les contrôles sur le badge
+                    this.controlsStyle.top = `${rect.top + rect.height / 2}px`;
+                    this.controlsStyle.left = `${rect.left + rect.width / 2}px`;
 
                     this.hoveredPlayer = player;
+                    this.hoveredPlayerBadge = badge;
                 },
-                onPlayerMouseLeave() {
+                onPlayerBadgeLeave() {
                     this.hideTimeout = setTimeout(() => {
                         this.hoveredPlayer = null;
-                    }, 100);
+                        this.hoveredPlayerBadge = null;
+                    }, 200);
                 },
-                onPopupMouseEnter() {
+                onPlayerBadgeTouch(event, player) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    // Si on touche le même joueur, on ferme
+                    if (this.hoveredPlayer && this.hoveredPlayer.id === player.id) {
+                        this.hoveredPlayer = null;
+                        this.hoveredPlayerBadge = null;
+                        return;
+                    }
+
+                    // Sinon on affiche les contrôles
+                    this.onPlayerBadgeEnter(event, player);
+                },
+                onControlsEnter() {
                     if (this.hideTimeout) {
                         clearTimeout(this.hideTimeout);
                         this.hideTimeout = null;
                     }
                 },
-                onPopupMouseLeave() {
+                onControlsLeave() {
                     this.hoveredPlayer = null;
+                    this.hoveredPlayerBadge = null;
                 },
                 getPlayerRoom(playerId) {
                     const player = this.game.players.find(p => p.id === playerId);
@@ -728,146 +898,44 @@ createApp({
                 }
             },
             template: `
-                <div class="game-container">
-                    <div class="players-panel">
-                        <div class="timer-panel">
-                            <div class="timer-section">
-                                <div class="turn-label">Tour {{ game.currentTurn }}/{{ maxTurns }}</div>
-                                <div :class="['timer-display', {danger: remainingTime < 60}]">
-                                    ⏱️ {{ formatTime(remainingTime) }}
-                                </div>
-                            </div>
-
-                            <!-- Barre de progression des joueurs -->
-                            <div class="progress-section">
-                                <div class="progress-label">
-                                    {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length }}
-                                    {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length > 1 ? 'joueurs vivants ont joué' : 'joueur vivant a joué' }}
-                                </div>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill"
-                                         :style="{width: (game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length / Math.max(1, game.players.filter(p => p.status === 'alive' || p.status === 'blocked').length) * 100) + '%'}">
-                                    </div>
-                                    <div class="progress-dots">
-                                        <div v-for="p in game.players.filter(p => p.status === 'alive' || p.status === 'blocked')" :key="p.id"
-                                             :class="['progress-dot', {active: p.hasChosen}]"
-                                             :title="p.name">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h2 class="players-title">Joueurs</h2>
-                        <div class="players-list-container">
-                            <div v-for="player in game.players" :key="player.id"
-                                 :class="['player-card', player.status, {played: player.hasChosen, 'popup-open': hoveredPlayer && hoveredPlayer.id === player.id}]"
-                                 @mouseenter="(e) => onPlayerMouseEnter(e, player)"
-                                 @mouseleave="onPlayerMouseLeave">
-                                <div class="player-header">
-                                    <div class="player-name">{{ player.name }}</div>
-                                    <div :class="['player-points', pointsClass(player.points)]">{{ player.points }} pts</div>
-                                </div>
-                                <div class="happiness-bar-container" :title="getHappinessLabel(player)">
-                                    <div class="happiness-bar-fill"
-                                         :class="{negative: getHappinessPercentage(player) < 50, positive: getHappinessPercentage(player) > 50}"
-                                         :style="{width: getHappinessPercentage(player) + '%'}">
-                                    </div>
-                                    <div class="happiness-value">{{ getHappinessPercentage(player) }}%</div>
-                                </div>
-                                <div v-if="player.status === 'winner'" class="winner-flag" title="A atteint la sortie !">🏁</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Popin d'actions - en dehors du panneau -->
-                    <div v-if="hoveredPlayer" class="player-actions-popup" :style="popupStyle"
-                         @mouseenter="onPopupMouseEnter"
-                         @mouseleave="onPopupMouseLeave">
-                        <div class="popup-title">
-                            Actions de {{ hoveredPlayer.name }}
-                            <span v-if="hoveredPlayer.hasChosen" style="color: var(--accent-success); margin-left: 8px;">✓ Choix fait</span>
-                        </div>
-
-                        <!-- Bouton abandonner (visible seulement si quelqu'un est dans la sortie) -->
-                        <div v-if="someoneInExit" class="give-up-action">
-                            <button @click="$emit('give-up', hoveredPlayer.id)"
-                                    class="btn-give-up"
-                                    :disabled="hoveredPlayer.hasChosen">
-                                💀 Abandonner
+                <div class="game-container-fullscreen">
+                    <!-- Header avec timer et infos -->
+                    <div class="game-header">
+                        <!-- Boutons navigation -->
+                        <div class="game-nav-buttons">
+                            <button @click="$emit('go-home')" class="btn-home" title="Retour à l'accueil">
+                                🏠
+                            </button>
+                            <button @click="$emit('toggle-help')" class="btn-help" title="Aide">
+                                ?
                             </button>
                         </div>
 
-                        <!-- Grille directionnelle (comme un clavier) -->
-                        <div class="directions-grid">
-                            <!-- Nord -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'north')" :key="door.id"
-                                 class="direction-cell north"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">↑</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.north.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
+                        <!-- Tour -->
+                        <div class="turn-section">
+                            <div class="turn-label">Tour {{ game.currentTurn }}/{{ maxTurns }}</div>
+                        </div>
+
+                        <!-- Timer -->
+                        <div :class="['timer-section', {danger: remainingTime < 60}]">
+                            ⏱️ {{ formatTime(remainingTime) }}
+                        </div>
+
+                        <!-- Barre de progression des joueurs -->
+                        <div class="progress-section">
+                            <div class="progress-label">
+                                {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length }}
+                                {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length > 1 ? 'joueurs ont joué' : 'joueur a joué' }}
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill"
+                                     :style="{width: (game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length / Math.max(1, game.players.filter(p => p.status === 'alive' || p.status === 'blocked').length) * 100) + '%'}">
                                 </div>
-                            </div>
-
-                            <!-- Ouest -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'west')" :key="door.id"
-                                 class="direction-cell west"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">←</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.west.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
-                                </div>
-                            </div>
-
-                            <!-- Centre : Rester ici -->
-                            <div class="direction-cell center"
-                                 :class="{
-                                     selected: hoveredPlayer.hasChosen && !hoveredPlayer.chosenDoorId,
-                                     disabled: hoveredPlayer.hasChosen
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && stayInRoomAction(hoveredPlayer.id)">
-                                <div class="direction-icon">●</div>
-                                <div class="direction-label">Rester</div>
-                            </div>
-
-                            <!-- Est -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'east')" :key="door.id"
-                                 class="direction-cell east"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">→</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.east.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
-                                </div>
-                            </div>
-
-                            <!-- Sud -->
-                            <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'south')" :key="door.id"
-                                 class="direction-cell south"
-                                 :class="{
-                                     selected: hoveredPlayer.chosenDoorId === door.id,
-                                     disabled: hoveredPlayer.hasChosen || door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))
-                                 }"
-                                 @click="!hoveredPlayer.hasChosen && door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
-                                <div class="direction-icon">↓</div>
-                                <div class="direction-info">
-                                    <span class="direction-capacity" :style="{backgroundColor: doorColors.south.color}">{{ door.diceResult }}</span>
-                                    <span v-if="!door.isOpen && door.diceResult > 0" class="direction-key">🔑-1</span>
+                                <div class="progress-dots">
+                                    <div v-for="p in game.players.filter(p => p.status === 'alive' || p.status === 'blocked')" :key="p.id"
+                                         :class="['progress-dot', {active: p.hasChosen}]"
+                                         :title="p.name">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -880,14 +948,24 @@ createApp({
                                 <div class="room-info-right">
                                     <div v-if="room.isStart" class="start-flag">🏁</div>
                                     <div v-else-if="room.isExit && room.isVisited" class="exit-flag">🏁</div>
-                                    <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">-{{ room.pointsCost }}</div>
+                                    <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">{{ room.pointsCost === 0 ? '0' : '-' + room.pointsCost }}</div>
                                     <div v-else-if="!room.isExit" class="cost-hidden">???</div>
                                 </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="room-players-list">
                                 <div v-for="p in playersInRoom(room.id)" :key="p.id"
-                                     :class="['player-dot', {heartbeat: hoveredPlayer && hoveredPlayer.id === p.id, 'happy-bounce': room.isExit && room.isVisited && allPlayersHavePlayed}]">
-                                    {{ p.status === 'dead' ? '💀' : p.name[0] }}
+                                     :class="['player-badge-interactive', {
+                                         'player-badge-active': hoveredPlayer && hoveredPlayer.id === p.id,
+                                         'player-badge-dead': p.status === 'dead',
+                                         'player-badge-played': p.hasChosen,
+                                         'happy-bounce': room.isExit && room.isVisited && allPlayersHavePlayed
+                                     }]"
+                                     @mouseenter="(e) => onPlayerBadgeEnter(e, p)"
+                                     @mouseleave="onPlayerBadgeLeave"
+                                     @touchstart="(e) => onPlayerBadgeTouch(e, p)"
+                                     :title="p.name + ' - ' + p.points + ' pts'">
+                                    <span v-if="p.status === 'dead'" class="player-badge-death">💀</span>
+                                    <img v-else :src="'avatars/' + p.gender + '/' + p.avatar" class="player-badge-img" :alt="p.name">
                                 </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="doors-container">
@@ -895,6 +973,87 @@ createApp({
                                     <div class="dice-result" :style="{backgroundColor: doorColors[door.direction].color}">{{ door.diceResult }}</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Contrôles directionnels autour du badge -->
+                    <div v-if="hoveredPlayer" class="player-controls-overlay" :style="controlsStyle"
+                         @mouseenter="onControlsEnter"
+                         @mouseleave="onControlsLeave">
+                        <!-- Avatar dans le cercle central -->
+                        <img :src="'avatars/' + (hoveredPlayer.gender || 'male') + '/' + (hoveredPlayer.avatar || 'male_01.png')" class="player-controls-center-avatar" :alt="hoveredPlayer.name">
+
+                        <!-- Nom du joueur -->
+                        <div class="player-controls-name">
+                            <span>{{ hoveredPlayer.name }}</span>
+                        </div>
+
+                        <!-- Nord -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'north')" :key="'n-'+door.id"
+                             class="direction-button direction-north"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">↑</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.north.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Sud -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'south')" :key="'s-'+door.id"
+                             class="direction-button direction-south"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">↓</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.south.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Ouest -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'west')" :key="'w-'+door.id"
+                             class="direction-button direction-west"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">←</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.west.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Est -->
+                        <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'east')" :key="'e-'+door.id"
+                             class="direction-button direction-east"
+                             :class="{disabled: door.diceResult === 0 || isDoorFull(door) || (!door.isOpen && !canOpenDoor(door, hoveredPlayer))}"
+                             @click="door.diceResult > 0 && !isDoorFull(door) && (door.isOpen ? chooseDoorAction(door.id, hoveredPlayer.id) : (canOpenDoor(door, hoveredPlayer) && openDoorAction(door.id, hoveredPlayer.id)))">
+                            <div class="direction-arrow">→</div>
+                            <div class="direction-details">
+                                <span class="direction-capacity" :style="{backgroundColor: doorColors.east.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Centre : Rester -->
+                        <div class="direction-button direction-center"
+                             @click="stayInRoomAction(hoveredPlayer.id)">
+                            <div class="direction-stay-label">Rester</div>
+                        </div>
+
+                        <!-- Bouton Abandonner (si disponible) -->
+                        <div v-if="someoneInExit" class="direction-button direction-give-up"
+                             @click="$emit('give-up', hoveredPlayer.id)">
+                            💀
                         </div>
                     </div>
                 </div>
