@@ -1,6 +1,6 @@
 const { createApp } = Vue;
 
-const API_BASE = '/api.php';
+const API_BASE = 'api.php';
 
 // Configuration du jeu
 const GAME_CONFIG = {
@@ -31,7 +31,17 @@ createApp({
             pointsLossData: null,
             playersPointsAtTurnStart: {},  // Points au début de chaque tour
             difficulty: localStorage.getItem('trapped_difficulty') || 'normal',
-            freeRoomsEnabled: localStorage.getItem('trapped_freeRooms') === 'true'
+            freeRoomsEnabled: localStorage.getItem('trapped_freeRooms') === 'true',
+            showLoadGame: false,
+            savedGames: [],
+            showModal: false,
+            modalData: {
+                title: '',
+                message: '',
+                confirmText: 'Confirmer',
+                cancelText: 'Annuler',
+                onConfirm: null
+            }
         };
     },
 
@@ -53,7 +63,104 @@ createApp({
         }
     },
 
+    async mounted() {
+        await this.loadSavedGames();
+    },
+
     methods: {
+        // Système de modale
+        showConfirmModal(title, message, onConfirm, confirmText = 'Confirmer', cancelText = 'Annuler') {
+            this.modalData = {
+                title,
+                message,
+                confirmText,
+                cancelText,
+                onConfirm
+            };
+            this.showModal = true;
+        },
+
+        confirmModal() {
+            if (this.modalData.onConfirm) {
+                this.modalData.onConfirm();
+            }
+            this.showModal = false;
+        },
+
+        cancelModal() {
+            this.showModal = false;
+        },
+
+        // Charger la liste des parties sauvegardées
+        async loadSavedGames() {
+            try {
+                const response = await fetch(`${API_BASE}/games/list`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.savedGames = data.data;
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des parties:', error);
+            }
+        },
+
+        // Charger une partie existante
+        async loadGame(gameId) {
+            try {
+                const response = await fetch(`${API_BASE}/game/${gameId}/state`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.gameId = gameId;
+                    this.game = data.data;
+                    this.screen = 'game';
+                    this.startTimer();
+                    this.startPolling();
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement de la partie:', error);
+                this.error = 'Impossible de charger la partie';
+            }
+        },
+
+        // Supprimer une partie
+        async deleteGame(gameId) {
+            this.showConfirmModal(
+                'Supprimer la partie',
+                'Êtes-vous sûr de vouloir supprimer cette partie ?',
+                async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/game/${gameId}/delete`, {
+                            method: 'DELETE'
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            await this.loadSavedGames();
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la suppression:', error);
+                        this.error = 'Impossible de supprimer la partie';
+                    }
+                },
+                'Supprimer',
+                'Annuler'
+            );
+        },
+
+        // Formater une date
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+
         // Enregistrement des joueurs
         addPlayer() {
             const name = this.newPlayerName.trim();
@@ -145,7 +252,7 @@ createApp({
                 await this.updateGameState();
                 await this.checkEndConditions();
                 await this.checkNextTurn(); // Vérifier si on doit passer au tour suivant
-            }, 2000); // Poll toutes les 2 secondes
+            }, 5000); // Poll toutes les 5 secondes
         },
 
         stopPolling() {
@@ -163,7 +270,7 @@ createApp({
                 if (data.success) {
                     // Forcer la réactivité en créant un nouvel objet
                     this.game = { ...data.data };
-                    this.remainingTime = data.data.remainingTime;
+                    // Ne pas écraser le timer local qui tourne déjà côté client
                 }
             } catch (e) {
                 console.error('Erreur de polling:', e);
@@ -266,27 +373,41 @@ createApp({
             }
         },
 
-        async giveUp(playerId) {
-            if (!confirm('Êtes-vous sûr de vouloir abandonner la partie ?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_BASE}/player/${playerId}/give-up`, {
-                    method: 'POST'
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    await this.updateGameState();
-                    alert(data.data.message);
-                } else {
-                    alert(data.error);
+        goHome() {
+            this.showConfirmModal(
+                'Retour à l\'accueil',
+                'Êtes-vous sûr de vouloir retourner à l\'accueil ? La partie est sauvegardée automatiquement.',
+                async () => {
+                    this.stopPolling();
+                    this.stopTimer();
+                    this.screen = 'registration';
+                    this.gameId = null;
+                    this.game = null;
+                    await this.loadSavedGames();
                 }
-            } catch (e) {
-                console.error('Erreur abandon:', e);
-            }
+            );
+        },
+
+        async giveUp(playerId) {
+            this.showConfirmModal(
+                'Abandonner',
+                'Êtes-vous sûr de vouloir abandonner la partie ?',
+                async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/player/${playerId}/give-up`, {
+                            method: 'POST'
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            await this.updateGameState();
+                        }
+                    } catch (e) {
+                        console.error('Erreur abandon:', e);
+                    }
+                }
+            );
         },
 
         async freePlayer(liberatorId, blockedPlayerId) {
@@ -396,7 +517,7 @@ createApp({
             this.screen = 'end';
         },
 
-        resetGame() {
+        async resetGame() {
             this.screen = 'registration';
             // Ne pas réinitialiser this.players pour garder les joueurs précédents
             this.newPlayerName = '';
@@ -405,6 +526,7 @@ createApp({
             this.game = null;
             this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
             this.endData = null;
+            await this.loadSavedGames();
         },
 
         async showPointsLoss(turn, oldPlayersData, newPlayersData) {
@@ -500,7 +622,7 @@ createApp({
         formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         },
 
         getPlayerPoints(playerId) {
@@ -578,7 +700,7 @@ createApp({
                 formatTime(seconds) {
                     const mins = Math.floor(seconds / 60);
                     const secs = seconds % 60;
-                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
                 },
                 pointsClass(points) {
                     if (points <= 3) return 'critical';
@@ -730,34 +852,39 @@ createApp({
                 <div class="game-container-fullscreen">
                     <!-- Header avec timer et infos -->
                     <div class="game-header">
-                        <div class="timer-panel">
-                            <div class="timer-section">
-                                <div class="turn-label">Tour {{ game.currentTurn }}/{{ maxTurns }}</div>
-                                <div :class="['timer-display', {danger: remainingTime < 60}]">
-                                    ⏱️ {{ formatTime(remainingTime) }}
-                                </div>
-                            </div>
+                        <!-- Bouton retour -->
+                        <button @click="$emit('go-home')" class="btn-home" title="Retour à l'accueil">
+                            🏠
+                        </button>
 
-                            <!-- Barre de progression des joueurs -->
-                            <div class="progress-section">
-                                <div class="progress-label">
-                                    {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length }}
-                                    {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length > 1 ? 'joueurs vivants ont joué' : 'joueur vivant a joué' }}
+                        <!-- Tour -->
+                        <div class="turn-section">
+                            <div class="turn-label">Tour {{ game.currentTurn }}/{{ maxTurns }}</div>
+                        </div>
+
+                        <!-- Timer -->
+                        <div :class="['timer-section', {danger: remainingTime < 60}]">
+                            ⏱️ {{ formatTime(remainingTime) }}
+                        </div>
+
+                        <!-- Barre de progression des joueurs -->
+                        <div class="progress-section">
+                            <div class="progress-label">
+                                {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length }}
+                                {{ game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length > 1 ? 'joueurs ont joué' : 'joueur a joué' }}
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill"
+                                     :style="{width: (game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length / Math.max(1, game.players.filter(p => p.status === 'alive' || p.status === 'blocked').length) * 100) + '%'}">
                                 </div>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill"
-                                         :style="{width: (game.players.filter(p => (p.status === 'alive' || p.status === 'blocked') && p.hasChosen).length / Math.max(1, game.players.filter(p => p.status === 'alive' || p.status === 'blocked').length) * 100) + '%'}">
-                                    </div>
-                                    <div class="progress-dots">
-                                        <div v-for="p in game.players.filter(p => p.status === 'alive' || p.status === 'blocked')" :key="p.id"
-                                             :class="['progress-dot', {active: p.hasChosen}]"
-                                             :title="p.name">
-                                        </div>
+                                <div class="progress-dots">
+                                    <div v-for="p in game.players.filter(p => p.status === 'alive' || p.status === 'blocked')" :key="p.id"
+                                         :class="['progress-dot', {active: p.hasChosen}]"
+                                         :title="p.name">
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
                     <div class="board-grid">
@@ -798,6 +925,12 @@ createApp({
                     <div v-if="hoveredPlayer" class="player-controls-overlay" :style="controlsStyle"
                          @mouseenter="onControlsEnter"
                          @mouseleave="onControlsLeave">
+                        <!-- Nom et avatar du joueur -->
+                        <div class="player-controls-name">
+                            <div class="player-controls-avatar">{{ hoveredPlayer.name[0] }}</div>
+                            <span>{{ hoveredPlayer.name }}</span>
+                        </div>
+
                         <!-- Nord -->
                         <div v-for="door in getSortedDoors(hoveredPlayer.id).filter(d => d.direction === 'north')" :key="'n-'+door.id"
                              class="direction-button direction-north"

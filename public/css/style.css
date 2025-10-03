@@ -27,19 +27,25 @@ body {
 }
 
 #app {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
+    width: 100%;
 }
 
 /* Écran d'enregistrement */
 .registration-screen {
     max-width: 500px;
-    margin: 100px auto;
+    margin: 0 auto;
     background: var(--bg-secondary);
     padding: 40px;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     border: 1px solid var(--border-color);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .registration-screen h1 {
@@ -208,12 +214,129 @@ button:disabled {
     border: 1px solid var(--accent-danger);
 }
 
+/* Bouton charger une partie */
+.btn-load-game {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-load-game:hover {
+    background: #2563eb;
+}
+
+/* Liste des parties sauvegardées */
+.saved-games-list {
+    margin-bottom: 20px;
+}
+
+.saved-games-list h3 {
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.no-games {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 20px;
+}
+
+.saved-game-item {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.saved-game-item:hover {
+    border-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.saved-game-content {
+    flex: 1;
+}
+
+.saved-game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.saved-game-date {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.saved-game-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.saved-game-status.playing {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--accent-success);
+}
+
+.saved-game-status.finished {
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--text-secondary);
+}
+
+.saved-game-info {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.saved-game-players {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.btn-delete-game {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.btn-delete-game:hover {
+    opacity: 1;
+}
+
 /* Écran de jeu */
 .game-screen {
-    display: grid;
-    grid-template-columns: 300px 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     height: calc(100vh - 40px);
+    width: 100%;
 }
 
 .game-header {
@@ -272,9 +395,6 @@ button:disabled {
 
 .timer-section {
     text-align: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
 }
 
 .turn-label {
@@ -297,6 +417,7 @@ button:disabled {
 
 .progress-section {
     padding-top: 5px;
+    flex: 1;
 }
 
 .progress-label {
@@ -700,10 +821,128 @@ button:disabled {
     opacity: 0.9;
 }
 
-.btn-reset {
-    width: 100%;
+.end-screen-actions {
+    display: flex;
+    gap: 15px;
     margin-top: 30px;
+}
+
+.btn-reset {
+    flex: 1;
     background: var(--accent-primary);
+}
+
+.btn-reset:hover {
+    background: #2563eb;
+}
+
+.btn-home-end {
+    flex: 1;
+    padding: 16px;
+    font-size: 18px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-home-end:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+}
+
+/* Modale de confirmation */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease;
+}
+
+.modal-content h2 {
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    font-size: 24px;
+}
+
+.modal-content p {
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-modal-cancel,
+.btn-modal-confirm {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-modal-cancel {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-modal-cancel:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+}
+
+.btn-modal-confirm {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.btn-modal-confirm:hover {
+    background: #2563eb;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Scrollbar personnalisée */
@@ -1252,12 +1491,14 @@ button:disabled {
     display: flex;
     flex-direction: column;
     height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px);
     gap: 12px;
+    overflow: hidden;
 }
 
 .game-container-fullscreen .game-header {
     background: var(--bg-secondary);
-    padding: 16px 24px;
+    padding: 20px 32px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     display: flex;
@@ -1265,34 +1506,66 @@ button:disabled {
     align-items: center;
     gap: 24px;
     flex-shrink: 0;
+    position: relative;
 }
 
-.game-container-fullscreen .timer-panel {
+.btn-home {
+    position: absolute;
+    left: 20px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    transition: all 0.3s;
     display: flex;
-    gap: 32px;
     align-items: center;
-    margin: 0;
-    background: transparent;
-    border: none;
-    padding: 0;
+    justify-content: center;
+}
+
+.btn-home:hover {
+    border-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.05);
+}
+
+.game-container-fullscreen .turn-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.game-container-fullscreen .turn-section .turn-label {
+    font-size: 24px;
+    font-weight: bold;
 }
 
 .game-container-fullscreen .timer-section {
     display: flex;
-    gap: 16px;
     align-items: center;
-    margin: 0;
-    padding: 0;
-    border: none;
+    justify-content: center;
+    flex: 1;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--accent-warning);
+}
+
+.game-container-fullscreen .timer-section.danger {
+    color: var(--accent-danger);
+    animation: pulse 1s infinite;
 }
 
 .game-container-fullscreen .board-grid {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     gap: 15px;
-    width: 100%;
-    max-height: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 /* Badges de joueurs interactifs */
@@ -1523,7 +1796,8 @@ button:disabled {
     position: relative;
     transition: all 0.3s;
     font-size: 16px;
-    min-height: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .game-container-fullscreen .room.start {
@@ -1541,13 +1815,14 @@ button:disabled {
 
 .game-container-fullscreen .progress-section {
     padding-top: 0;
+    flex: 1;
 }
 
 .game-container-fullscreen .progress-label {
     font-size: 11px;
     color: var(--text-secondary);
+    text-align: center;
     margin-bottom: 6px;
-    text-align: left;
     font-weight: 600;
 }
 
@@ -1577,4 +1852,42 @@ button:disabled {
 .game-container-fullscreen .timer-display.danger {
     color: var(--accent-danger);
     animation: pulse 1s infinite;
+}
+
+/* Nom et avatar du joueur au-dessus des contrôles */
+.player-controls-name {
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-primary);
+    font-weight: bold;
+    font-size: 18px;
+    white-space: nowrap;
+    z-index: 2;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(10, 14, 39, 0.95);
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+}
+
+.player-controls-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }

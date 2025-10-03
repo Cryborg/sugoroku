@@ -3,64 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Future Sugoroku - Trapped</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>Trapped - Jeu d'évasion</title>
+    <link rel="icon" type="image/png" href="favicon.png?v=2">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
     <div id="app">
         <!-- Écran d'enregistrement des joueurs -->
         <div v-if="screen === 'registration'" class="registration-screen">
-            <h1>⚠️ Future Sugoroku</h1>
+            <h1>🚪 Trapped</h1>
             <p class="subtitle">Enregistrez les joueurs (3-8)</p>
 
-            <div class="game-settings">
-                <div class="setting-group">
-                    <label>Difficulté</label>
-                    <select v-model="difficulty">
-                        <option value="easy">Facile (25 points)</option>
-                        <option value="normal" selected>Normale (20 points)</option>
-                        <option value="hard">Difficile (15 points)</option>
-                    </select>
-                </div>
-
-                <div class="setting-group checkbox-group">
-                    <label>
-                        <input type="checkbox" v-model="freeRoomsEnabled">
-                        Pièces gratuites possibles (10% de chance)
-                    </label>
-                </div>
-            </div>
-
-            <div class="player-form">
-                <input
-                    v-model="newPlayerName"
-                    @keyup.enter="addPlayer"
-                    type="text"
-                    placeholder="Nom du joueur"
-                    maxlength="20"
-                >
-                <button @click="addPlayer" :disabled="!newPlayerName.trim()">
-                    Ajouter
-                </button>
-            </div>
-
-            <div class="player-list">
-                <div v-for="(player, index) in players" :key="index" class="player-item">
-                    <span>{{ player }}</span>
-                    <button @click="removePlayer(index)" class="btn-remove">×</button>
-                </div>
-            </div>
-
-            <button
-                @click="startGame"
-                :disabled="players.length < 3"
-                class="btn-start"
-            >
-                Démarrer la partie ({{ players.length }}/8)
+            <button @click="showLoadGame = !showLoadGame" class="btn-load-game">
+                {{ showLoadGame ? 'Nouvelle partie' : 'Reprendre une partie' }}
             </button>
 
-            <p v-if="error" class="error">{{ error }}</p>
+            <!-- Liste des parties sauvegardées -->
+            <div v-if="showLoadGame" class="saved-games-list">
+                <h3>Parties sauvegardées</h3>
+                <div v-if="savedGames.length === 0" class="no-games">Aucune partie sauvegardée</div>
+                <div v-for="game in savedGames" :key="game.id" class="saved-game-item">
+                    <div @click="loadGame(game.id)" class="saved-game-content">
+                        <div class="saved-game-header">
+                            <span class="saved-game-date">{{ formatDate(game.createdAt) }}</span>
+                            <span :class="['saved-game-status', game.status]">{{ game.status === 'playing' ? 'En cours' : 'Terminée' }}</span>
+                        </div>
+                        <div class="saved-game-info">
+                            <span>Tour {{ game.currentTurn }}/15</span>
+                            <span>•</span>
+                            <span>{{ game.playerCount }} joueur{{ game.playerCount > 1 ? 's' : '' }}</span>
+                        </div>
+                        <div class="saved-game-players">{{ game.playerNames }}</div>
+                    </div>
+                    <button @click.stop="deleteGame(game.id)" class="btn-delete-game" title="Supprimer">🗑️</button>
+                </div>
+            </div>
+
+            <div v-if="!showLoadGame">
+                <div class="game-settings">
+                    <div class="setting-group">
+                        <label>Difficulté</label>
+                        <select v-model="difficulty">
+                            <option value="easy">Facile (25 points)</option>
+                            <option value="normal" selected>Normale (20 points)</option>
+                            <option value="hard">Difficile (15 points)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" v-model="freeRoomsEnabled">
+                            Pièces gratuites possibles (10% de chance)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="player-form">
+                    <input
+                        v-model="newPlayerName"
+                        @keyup.enter="addPlayer"
+                        type="text"
+                        placeholder="Nom du joueur"
+                        maxlength="20"
+                    >
+                    <button @click="addPlayer" :disabled="!newPlayerName.trim()">
+                        Ajouter
+                    </button>
+                </div>
+
+                <div class="player-list">
+                    <div v-for="(player, index) in players" :key="index" class="player-item">
+                        <span>{{ player }}</span>
+                        <button @click="removePlayer(index)" class="btn-remove">×</button>
+                    </div>
+                </div>
+
+                <button
+                    @click="startGame"
+                    :disabled="players.length < 3"
+                    class="btn-start"
+                >
+                    Démarrer la partie ({{ players.length }}/8)
+                </button>
+
+                <p v-if="error" class="error">{{ error }}</p>
+            </div>
         </div>
 
         <!-- Écran de jeu -->
@@ -73,6 +101,7 @@
                 @free-player="freePlayer"
                 @stay-in-room="stayInRoom"
                 @give-up="giveUp"
+                @go-home="goHome"
             ></game-board>
         </div>
 
@@ -122,7 +151,22 @@
                 </div>
             </div>
 
-            <button @click="resetGame" class="btn-reset">Nouvelle partie</button>
+            <div class="end-screen-actions">
+                <button @click="resetGame" class="btn-reset">Nouvelle partie</button>
+                <button @click="goHome" class="btn-home-end">Menu principal</button>
+            </div>
+        </div>
+
+        <!-- Modale de confirmation -->
+        <div v-if="showModal" class="modal-overlay" @click="cancelModal">
+            <div class="modal-content" @click.stop>
+                <h2>{{ modalData.title }}</h2>
+                <p>{{ modalData.message }}</p>
+                <div class="modal-actions">
+                    <button @click="cancelModal" class="btn-modal-cancel">{{ modalData.cancelText }}</button>
+                    <button @click="confirmModal" class="btn-modal-confirm">{{ modalData.confirmText }}</button>
+                </div>
+            </div>
         </div>
 
         <!-- Popup de perte de points -->
@@ -150,6 +194,6 @@
         </div>
     </div>
 
-    <script src="/js/app.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
