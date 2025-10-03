@@ -942,7 +942,7 @@ createApp({
                                 <div class="room-info-right">
                                     <div v-if="room.isStart" class="start-flag">🏁</div>
                                     <div v-else-if="room.isExit && room.isVisited" class="exit-flag">🏁</div>
-                                    <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">-{{ room.pointsCost }}</div>
+                                    <div v-else-if="room.isVisited && !room.isExit" class="cost-badge">{{ room.pointsCost === 0 ? '0' : '-' + room.pointsCost }}</div>
                                     <div v-else-if="!room.isExit" class="cost-hidden">???</div>
                                 </div>
                             </div>
