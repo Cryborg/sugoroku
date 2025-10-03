@@ -949,6 +949,9 @@ createApp({
                             <div class="direction-arrow">↑</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.north.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
                             </div>
                         </div>
 
@@ -960,6 +963,9 @@ createApp({
                             <div class="direction-arrow">↓</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.south.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
                             </div>
                         </div>
 
@@ -971,6 +977,9 @@ createApp({
                             <div class="direction-arrow">←</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.west.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
                             </div>
                         </div>
 
@@ -982,6 +991,9 @@ createApp({
                             <div class="direction-arrow">→</div>
                             <div class="direction-details">
                                 <span class="direction-capacity" :style="{backgroundColor: doorColors.east.color}">{{ door.diceResult }}</span>
+                                <span v-if="door.happinessModifier !== 0" class="direction-happiness" :class="door.happinessModifier > 0 ? 'positive' : 'negative'">
+                                    {{ door.happinessModifier > 0 ? '+' : '' }}{{ door.happinessModifier }}
+                                </span>
                             </div>
                         </div>
 
