@@ -19,10 +19,13 @@ class Door
     public ?int $diceResult = null;
     public ?int $currentTurn = null;
     public ?int $openedBy = null; // ID du joueur qui a payé pour ouvrir cette porte
+    public int $happinessModifier = 0; // Bonheur/malheur de -5 à +5
 
     public function __construct()
     {
         $this->db = Database::getInstance();
+        // Générer un modificateur de bonheur aléatoire entre -5 et +5
+        $this->happinessModifier = rand(-5, 5);
     }
 
     /**
@@ -31,15 +34,16 @@ class Door
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO doors (room_id, direction, dice_result, current_turn)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO doors (room_id, direction, dice_result, current_turn, happiness_modifier)
+            VALUES (?, ?, ?, ?, ?)
         ");
 
         if ($stmt->execute([
             $this->roomId,
             $this->direction,
             $this->diceResult,
-            $this->currentTurn
+            $this->currentTurn,
+            $this->happinessModifier
         ])) {
             $this->id = (int) $this->db->lastInsertId();
             return true;
@@ -76,6 +80,7 @@ class Door
         $this->diceResult = $data['dice_result'];
         $this->currentTurn = $data['current_turn'];
         $this->openedBy = $data['opened_by'] ?? null;
+        $this->happinessModifier = $data['happiness_modifier'] ?? 0;
     }
 
     /**
@@ -200,7 +205,8 @@ class Door
             'diceResult' => $this->diceResult,
             'currentTurn' => $this->currentTurn,
             'isOpen' => $this->isOpen(),
-            'openedBy' => $this->openedBy
+            'openedBy' => $this->openedBy,
+            'happinessModifier' => $this->happinessModifier
         ];
     }
 }

@@ -154,6 +154,10 @@ class GameController
         // Victoire si TOUS les joueurs vivants sont dans la sortie
         if (count($winners) > 0 && count($alive) === 0) {
             $game->finish();
+
+            // Trier les gagnants par bonheur croissant
+            usort($winners, fn($a, $b) => $a->happiness <=> $b->happiness);
+
             return $this->success([
                 'gameOver' => true,
                 'reason' => 'victory',

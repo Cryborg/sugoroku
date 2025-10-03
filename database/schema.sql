@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS players (
     points INTEGER DEFAULT 15,
     current_room_id INTEGER NULL,
     status VARCHAR(20) DEFAULT 'alive',
+    happiness INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_points CHECK (points >= 0 AND points <= 15),
     CONSTRAINT check_status CHECK (status IN ('alive', 'dead', 'blocked', 'winner')),
@@ -53,8 +54,10 @@ CREATE TABLE IF NOT EXISTS doors (
     dice_result INTEGER NULL,
     current_turn INTEGER NULL,
     opened_by INTEGER NULL,
+    happiness_modifier INTEGER DEFAULT 0,
     CONSTRAINT check_direction CHECK (direction IN ('north', 'south', 'east', 'west')),
     CONSTRAINT check_dice_result CHECK (dice_result IS NULL OR (dice_result >= 0 AND dice_result <= 9)),
+    CONSTRAINT check_happiness CHECK (happiness_modifier >= -5 AND happiness_modifier <= 5),
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
     FOREIGN KEY (opened_by) REFERENCES players(id) ON DELETE SET NULL
 );

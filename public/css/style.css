@@ -618,6 +618,39 @@ button:disabled {
     align-items: center;
 }
 
+.happiness-bar-container {
+    margin-top: 8px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.happiness-bar-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.happiness-bar-fill.positive {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.happiness-bar-fill.negative {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.happiness-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--text-primary);
+    text-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+
 .player-actions-popup {
     position: fixed;
     left: 360px;

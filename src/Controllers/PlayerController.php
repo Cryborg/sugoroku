@@ -192,6 +192,11 @@ class PlayerController
             // Déplacer le joueur
             $player->moveToRoom($targetRoom->id);
 
+            // Appliquer le bonheur/malheur de la porte
+            if ($door->happinessModifier != 0) {
+                $player->addHappiness($door->happinessModifier);
+            }
+
             // NE PAS marquer la salle comme visitée maintenant
             // On le fera à la fin du tour pour éviter de révéler les infos
 

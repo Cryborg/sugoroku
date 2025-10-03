@@ -717,6 +717,13 @@ createApp({
                                     <div class="player-name">{{ player.name }}</div>
                                     <div :class="['player-points', pointsClass(player.points)]">{{ player.points }} pts</div>
                                 </div>
+                                <div class="happiness-bar-container" :title="'Bonheur: ' + (player.happiness || 0)">
+                                    <div class="happiness-bar-fill"
+                                         :class="{negative: (player.happiness || 0) < 0, positive: (player.happiness || 0) > 0}"
+                                         :style="{width: Math.min(100, Math.abs((player.happiness || 0)) * 10) + '%'}">
+                                    </div>
+                                    <div class="happiness-value">{{ player.happiness || 0 }}</div>
+                                </div>
                                 <div v-if="player.status === 'winner'" class="winner-flag" title="A atteint la sortie !">🏁</div>
                             </div>
                         </div>

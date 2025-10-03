@@ -19,6 +19,7 @@ class Player
     public int $points = Config::PLAYER_STARTING_POINTS;
     public ?int $currentRoomId = null;
     public string $status = 'alive'; // alive, dead, blocked, winner
+    public int $happiness = 0; // Bonheur total accumulé
     public string $createdAt;
 
     public function __construct()
@@ -32,8 +33,8 @@ class Player
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO players (game_id, name, points, current_room_id, status)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO players (game_id, name, points, current_room_id, status, happiness)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
 
         if ($stmt->execute([
@@ -41,7 +42,8 @@ class Player
             $this->name,
             $this->points,
             $this->currentRoomId,
-            $this->status
+            $this->status,
+            $this->happiness
         ])) {
             $this->id = (int) $this->db->lastInsertId();
             return true;
@@ -78,6 +80,7 @@ class Player
         $this->points = $data['points'];
         $this->currentRoomId = $data['current_room_id'];
         $this->status = $data['status'];
+        $this->happiness = $data['happiness'] ?? 0;
         $this->createdAt = $data['created_at'];
     }
 
@@ -110,6 +113,22 @@ class Player
     public function addPoints(int $amount): bool
     {
         return $this->updatePoints(min(Config::PLAYER_STARTING_POINTS, $this->points + $amount));
+    }
+
+    /**
+     * Ajoute du bonheur au joueur
+     */
+    public function addHappiness(int $amount): bool
+    {
+        $this->happiness += $amount;
+
+        $stmt = $this->db->prepare("
+            UPDATE players
+            SET happiness = ?
+            WHERE id = ?
+        ");
+
+        return $stmt->execute([$this->happiness, $this->id]);
     }
 
     /**
@@ -256,6 +275,7 @@ class Player
             'points' => $this->points,
             'currentRoomId' => $this->currentRoomId,
             'status' => $this->status,
+            'happiness' => $this->happiness,
             'createdAt' => $this->createdAt ?? null
         ];
 

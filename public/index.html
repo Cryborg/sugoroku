@@ -63,9 +63,9 @@
             <h1>🎮 Partie terminée</h1>
 
             <div v-if="endData.reason === 'victory'" class="winners">
-                <h2>🏁 Gagnants !</h2>
+                <h2>🏁 Gagnants ! (classés par bonheur croissant)</h2>
                 <div v-for="winner in endData.winners" :key="winner.id" class="winner-item">
-                    {{ winner.name }} - {{ winner.points }} points
+                    {{ winner.name }} - {{ winner.points }} points - Bonheur: {{ winner.happiness || 0 }}
                 </div>
             </div>
 
