@@ -42,10 +42,9 @@ body {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     border: 1px solid var(--border-color);
     max-height: calc(100vh - 40px);
-    overflow-y: auto;
+    overflow-y: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: center;
 }
 
 .registration-header {
@@ -338,12 +337,29 @@ button:disabled {
 /* Liste des parties sauvegardées */
 .saved-games-list {
     margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
 }
 
 .saved-games-list h3 {
+    flex-shrink: 0;
     margin-bottom: 15px;
     color: var(--text-primary);
     text-align: center;
+}
+
+.saved-games-scroll {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-right: 5px;
+}
+
+.saved-games-list .btn-new-game-bottom {
+    flex-shrink: 0;
 }
 
 .no-games {

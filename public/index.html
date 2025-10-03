@@ -30,21 +30,23 @@
             <!-- Liste des parties sauvegardées -->
             <div v-if="showLoadGame" class="saved-games-list">
                 <h3>Parties sauvegardées</h3>
-                <div v-if="savedGames.length === 0" class="no-games">Aucune partie sauvegardée</div>
-                <div v-for="game in savedGames" :key="game.id" class="saved-game-item">
-                    <div @click="loadGame(game.id)" class="saved-game-content">
-                        <div class="saved-game-header">
-                            <span class="saved-game-date">{{ formatDate(game.createdAt) }}</span>
-                            <span :class="['saved-game-status', game.status]">{{ game.status === 'playing' ? 'En cours' : 'Terminée' }}</span>
+                <div class="saved-games-scroll">
+                    <div v-if="savedGames.length === 0" class="no-games">Aucune partie sauvegardée</div>
+                    <div v-for="game in savedGames" :key="game.id" class="saved-game-item">
+                        <div @click="loadGame(game.id)" class="saved-game-content">
+                            <div class="saved-game-header">
+                                <span class="saved-game-date">{{ formatDate(game.createdAt) }}</span>
+                                <span :class="['saved-game-status', game.status]">{{ game.status === 'playing' ? 'En cours' : 'Terminée' }}</span>
+                            </div>
+                            <div class="saved-game-info">
+                                <span>Tour {{ game.currentTurn }}/15</span>
+                                <span>•</span>
+                                <span>{{ game.playerCount }} joueur{{ game.playerCount > 1 ? 's' : '' }}</span>
+                            </div>
+                            <div class="saved-game-players">{{ game.playerNames }}</div>
                         </div>
-                        <div class="saved-game-info">
-                            <span>Tour {{ game.currentTurn }}/15</span>
-                            <span>•</span>
-                            <span>{{ game.playerCount }} joueur{{ game.playerCount > 1 ? 's' : '' }}</span>
-                        </div>
-                        <div class="saved-game-players">{{ game.playerNames }}</div>
+                        <button @click.stop="deleteGame(game.id)" class="btn-delete-game" title="Supprimer">🗑️</button>
                     </div>
-                    <button @click.stop="deleteGame(game.id)" class="btn-delete-game" title="Supprimer">🗑️</button>
                 </div>
 
                 <button @click="showLoadGame = false" class="btn-new-game-bottom">
