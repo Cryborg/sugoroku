@@ -19,6 +19,8 @@ class Game
     public int $currentTurn = 1;
     public string $status = 'waiting'; // waiting, playing, finished
     public ?string $turnStartedAt = null;
+    public int $startingPoints = 20;
+    public bool $freeRoomsEnabled = false;
 
     public function __construct()
     {
@@ -31,11 +33,11 @@ class Game
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO games (created_at, current_turn, status)
-            VALUES (datetime('now'), 1, 'waiting')
+            INSERT INTO games (created_at, current_turn, status, starting_points, free_rooms_enabled)
+            VALUES (datetime('now'), 1, 'waiting', ?, ?)
         ");
 
-        if ($stmt->execute()) {
+        if ($stmt->execute([$this->startingPoints, $this->freeRoomsEnabled ? 1 : 0])) {
             $this->id = (int) $this->db->lastInsertId();
             $this->currentTurn = 1;
             $this->status = 'waiting';
@@ -61,6 +63,8 @@ class Game
             $this->currentTurn = $data['current_turn'];
             $this->status = $data['status'];
             $this->turnStartedAt = $data['turn_started_at'];
+            $this->startingPoints = $data['starting_points'] ?? 20;
+            $this->freeRoomsEnabled = ($data['free_rooms_enabled'] ?? 0) == 1;
             return true;
         }
 
@@ -250,7 +254,16 @@ class Game
                 $room->isExit = ($x === $exitCorner[0] && $y === $exitCorner[1]);
 
                 // Définir le coût (0 pour départ et arrivée)
-                $room->pointsCost = ($room->isStart || $room->isExit) ? 0 : $pointsPool[$index++];
+                if ($room->isStart || $room->isExit) {
+                    $room->pointsCost = 0;
+                } else {
+                    // Si l'option pièces gratuites est activée, 10% de chance d'avoir un coût de 0
+                    if ($this->freeRoomsEnabled && rand(1, 100) <= 10) {
+                        $room->pointsCost = 0;
+                    } else {
+                        $room->pointsCost = $pointsPool[$index++];
+                    }
+                }
 
                 // Définir le nombre de portes selon la position
                 $room->doorCount = $this->calculateDoorCount($x, $y);

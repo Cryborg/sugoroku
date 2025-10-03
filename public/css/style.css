@@ -56,6 +56,64 @@ body {
     margin-bottom: 30px;
 }
 
+.game-settings {
+    background: var(--bg-tertiary);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.setting-group {
+    margin-bottom: 16px;
+}
+
+.setting-group:last-child {
+    margin-bottom: 0;
+}
+
+.setting-group label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.setting-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.setting-group select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: normal;
+    color: var(--text-primary);
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+}
+
 .player-form {
     display: flex;
     gap: 10px;
@@ -570,6 +628,69 @@ button:disabled {
     font-weight: 600;
 }
 
+.winners-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.winners-table thead {
+    background: var(--accent-primary);
+}
+
+.winners-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.winners-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+}
+
+.winners-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.winners-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.winners-table td {
+    padding: 14px 16px;
+    font-size: 15px;
+}
+
+.winners-table .rank {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--accent-warning);
+    width: 80px;
+}
+
+.winners-table .name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.winners-table .points {
+    color: var(--accent-success);
+    font-weight: 600;
+}
+
+.winners-table .happiness {
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
 .dead-item {
     padding: 10px;
     margin: 5px 0;
@@ -620,9 +741,9 @@ button:disabled {
 
 .happiness-bar-container {
     margin-top: 8px;
-    height: 6px;
+    height: 20px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
+    border-radius: 6px;
     position: relative;
     overflow: hidden;
 }
@@ -645,7 +766,7 @@ button:disabled {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: bold;
     color: var(--text-primary);
     text-shadow: 0 0 3px rgba(0,0,0,0.8);
@@ -653,7 +774,6 @@ button:disabled {
 
 .player-actions-popup {
     position: fixed;
-    left: 360px;
     background: var(--bg-primary);
     border: 2px solid var(--accent-primary);
     border-radius: 12px;

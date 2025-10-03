@@ -15,13 +15,23 @@ class GameController
     /**
      * Crée une nouvelle partie
      */
-    public function create(array $playerNames): array
+    public function create(array $playerNames, string $difficulty = 'normal', bool $freeRoomsEnabled = false): array
     {
         if (count($playerNames) < 3 || count($playerNames) > 8) {
             return $this->error('Le nombre de joueurs doit être entre 3 et 8');
         }
 
+        // Convertir la difficulté en points de départ
+        $startingPoints = match($difficulty) {
+            'easy' => 25,
+            'hard' => 15,
+            default => 20
+        };
+
         $game = new Game();
+        $game->startingPoints = $startingPoints;
+        $game->freeRoomsEnabled = $freeRoomsEnabled;
+
         if (!$game->create()) {
             return $this->error('Impossible de créer la partie');
         }
@@ -51,6 +61,7 @@ class GameController
             $player->gameId = $game->id;
             $player->name = trim($name);
             $player->currentRoomId = $startRoom->id;
+            $player->points = $startingPoints;
 
             if (!$player->create()) {
                 return $this->error("Impossible de créer le joueur {$name}");
@@ -155,8 +166,8 @@ class GameController
         if (count($winners) > 0 && count($alive) === 0) {
             $game->finish();
 
-            // Trier les gagnants par bonheur croissant
-            usort($winners, fn($a, $b) => $a->happiness <=> $b->happiness);
+            // Trier les gagnants par bonheur décroissant
+            usort($winners, fn($a, $b) => $b->happiness <=> $a->happiness);
 
             return $this->success([
                 'gameOver' => true,

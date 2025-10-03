@@ -8,8 +8,11 @@ CREATE TABLE IF NOT EXISTS games (
     current_turn INTEGER DEFAULT 1,
     status VARCHAR(20) DEFAULT 'waiting',
     turn_started_at DATETIME NULL,
+    starting_points INTEGER DEFAULT 20,
+    free_rooms_enabled BOOLEAN DEFAULT 0,
     CONSTRAINT check_turn CHECK (current_turn >= 1 AND current_turn <= 15),
-    CONSTRAINT check_status CHECK (status IN ('waiting', 'playing', 'finished'))
+    CONSTRAINT check_status CHECK (status IN ('waiting', 'playing', 'finished')),
+    CONSTRAINT check_starting_points CHECK (starting_points >= 15 AND starting_points <= 25)
 );
 
 -- Table des joueurs
@@ -17,12 +20,14 @@ CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER NOT NULL,
     name VARCHAR(100) NOT NULL,
-    points INTEGER DEFAULT 15,
+    points INTEGER DEFAULT 20,
     current_room_id INTEGER NULL,
     status VARCHAR(20) DEFAULT 'alive',
     happiness INTEGER DEFAULT 0,
+    happiness_positive INTEGER DEFAULT 0,
+    happiness_negative INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_points CHECK (points >= 0 AND points <= 15),
+    CONSTRAINT check_points CHECK (points >= 0 AND points <= 25),
     CONSTRAINT check_status CHECK (status IN ('alive', 'dead', 'blocked', 'winner')),
     FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 );

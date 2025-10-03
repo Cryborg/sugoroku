@@ -51,7 +51,11 @@ function route(string $method, string $uri, array $input): array
     // POST /game/create
     if ($method === 'POST' && $parts[0] === 'game' && $parts[1] === 'create') {
         $controller = new GameController();
-        return $controller->create($input['players'] ?? []);
+        return $controller->create(
+            $input['players'] ?? [],
+            $input['difficulty'] ?? 'normal',
+            $input['freeRoomsEnabled'] ?? false
+        );
     }
 
     // POST /game/{id}/start

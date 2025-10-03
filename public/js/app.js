@@ -29,7 +29,9 @@ createApp({
             },
             showPointsLossPopup: false,
             pointsLossData: null,
-            playersPointsAtTurnStart: {}  // Points au début de chaque tour
+            playersPointsAtTurnStart: {},  // Points au début de chaque tour
+            difficulty: localStorage.getItem('trapped_difficulty') || 'normal',
+            freeRoomsEnabled: localStorage.getItem('trapped_freeRooms') === 'true'
         };
     },
 
@@ -40,6 +42,14 @@ createApp({
                 localStorage.setItem('trapped_players', JSON.stringify(newPlayers));
             },
             deep: true
+        },
+        // Sauvegarder la difficulté
+        difficulty(newValue) {
+            localStorage.setItem('trapped_difficulty', newValue);
+        },
+        // Sauvegarder l'option pièces gratuites
+        freeRoomsEnabled(newValue) {
+            localStorage.setItem('trapped_freeRooms', newValue.toString());
         }
     },
 
@@ -78,7 +88,11 @@ createApp({
                 const response = await fetch(`${API_BASE}/game/create`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ players: this.players })
+                    body: JSON.stringify({
+                        players: this.players,
+                        difficulty: this.difficulty,
+                        freeRoomsEnabled: this.freeRoomsEnabled
+                    })
                 });
 
                 const data = await response.json();
@@ -520,7 +534,8 @@ createApp({
                     },
                     hoveredPlayer: null,
                     popupStyle: {
-                        top: '0px'
+                        top: '0px',
+                        left: '0px'
                     },
                     hideTimeout: null
                 };
@@ -591,13 +606,26 @@ createApp({
 
                     // Calculer la position de la popup en évitant qu'elle sorte de l'écran
                     const popupHeight = 400; // Hauteur approximative de la popup
+                    const popupWidth = 320; // Largeur de la popup
                     const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+                    const gap = 20; // Espace entre la carte et la popup
 
-                    // Si la popup dépasserait en bas, la positionner au-dessus
+                    // Position verticale : Si la popup dépasserait en bas, la positionner au-dessus
                     if (rect.bottom + popupHeight > viewportHeight) {
                         this.popupStyle.top = `${Math.max(10, rect.bottom - popupHeight)}px`;
                     } else {
                         this.popupStyle.top = `${rect.top}px`;
+                    }
+
+                    // Position horizontale : À droite de la carte du joueur
+                    const leftPosition = rect.right + gap;
+
+                    // Si la popup dépasserait à droite, la positionner à gauche de la carte
+                    if (leftPosition + popupWidth > viewportWidth) {
+                        this.popupStyle.left = `${Math.max(10, rect.left - popupWidth - gap)}px`;
+                    } else {
+                        this.popupStyle.left = `${leftPosition}px`;
                     }
 
                     this.hoveredPlayer = player;
@@ -674,6 +702,29 @@ createApp({
                 stayInRoomAction(playerId) {
                     this.$emit('stay-in-room', playerId);
                     this.hoveredPlayer = null; // Fermer la popup
+                },
+                getHappinessPercentage(player) {
+                    const positive = player.happinessPositive || 0;
+                    const negative = player.happinessNegative || 0;
+                    const total = positive + negative;
+
+                    if (total === 0) {
+                        return 50; // Neutre
+                    }
+
+                    // Formule : bonheur / (bonheur + malheur) * 100
+                    return Math.round((positive / total) * 100);
+                },
+                getHappinessLabel(player) {
+                    const positive = player.happinessPositive || 0;
+                    const negative = player.happinessNegative || 0;
+
+                    if (positive === 0 && negative === 0) {
+                        return '50% (neutre)';
+                    }
+
+                    const percentage = this.getHappinessPercentage(player);
+                    return `${percentage}% (+${positive}/-${negative})`;
                 }
             },
             template: `
@@ -717,12 +768,12 @@ createApp({
                                     <div class="player-name">{{ player.name }}</div>
                                     <div :class="['player-points', pointsClass(player.points)]">{{ player.points }} pts</div>
                                 </div>
-                                <div class="happiness-bar-container" :title="'Bonheur: ' + (player.happiness || 0)">
+                                <div class="happiness-bar-container" :title="getHappinessLabel(player)">
                                     <div class="happiness-bar-fill"
-                                         :class="{negative: (player.happiness || 0) < 0, positive: (player.happiness || 0) > 0}"
-                                         :style="{width: Math.min(100, Math.abs((player.happiness || 0)) * 10) + '%'}">
+                                         :class="{negative: getHappinessPercentage(player) < 50, positive: getHappinessPercentage(player) > 50}"
+                                         :style="{width: getHappinessPercentage(player) + '%'}">
                                     </div>
-                                    <div class="happiness-value">{{ player.happiness || 0 }}</div>
+                                    <div class="happiness-value">{{ getHappinessPercentage(player) }}%</div>
                                 </div>
                                 <div v-if="player.status === 'winner'" class="winner-flag" title="A atteint la sortie !">🏁</div>
                             </div>

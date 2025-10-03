@@ -20,6 +20,8 @@ class Player
     public ?int $currentRoomId = null;
     public string $status = 'alive'; // alive, dead, blocked, winner
     public int $happiness = 0; // Bonheur total accumulé
+    public int $happinessPositive = 0; // Bonheur positif accumulé
+    public int $happinessNegative = 0; // Malheur accumulé (valeur absolue)
     public string $createdAt;
 
     public function __construct()
@@ -33,8 +35,8 @@ class Player
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO players (game_id, name, points, current_room_id, status, happiness)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO players (game_id, name, points, current_room_id, status, happiness, happiness_positive, happiness_negative)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         if ($stmt->execute([
@@ -43,7 +45,9 @@ class Player
             $this->points,
             $this->currentRoomId,
             $this->status,
-            $this->happiness
+            $this->happiness,
+            $this->happinessPositive,
+            $this->happinessNegative
         ])) {
             $this->id = (int) $this->db->lastInsertId();
             return true;
@@ -81,6 +85,8 @@ class Player
         $this->currentRoomId = $data['current_room_id'];
         $this->status = $data['status'];
         $this->happiness = $data['happiness'] ?? 0;
+        $this->happinessPositive = $data['happiness_positive'] ?? 0;
+        $this->happinessNegative = $data['happiness_negative'] ?? 0;
         $this->createdAt = $data['created_at'];
     }
 
@@ -122,13 +128,20 @@ class Player
     {
         $this->happiness += $amount;
 
+        // Ajouter aux compteurs séparés
+        if ($amount > 0) {
+            $this->happinessPositive += $amount;
+        } else if ($amount < 0) {
+            $this->happinessNegative += abs($amount);
+        }
+
         $stmt = $this->db->prepare("
             UPDATE players
-            SET happiness = ?
+            SET happiness = ?, happiness_positive = ?, happiness_negative = ?
             WHERE id = ?
         ");
 
-        return $stmt->execute([$this->happiness, $this->id]);
+        return $stmt->execute([$this->happiness, $this->happinessPositive, $this->happinessNegative, $this->id]);
     }
 
     /**
@@ -276,6 +289,8 @@ class Player
             'currentRoomId' => $this->currentRoomId,
             'status' => $this->status,
             'happiness' => $this->happiness,
+            'happinessPositive' => $this->happinessPositive,
+            'happinessNegative' => $this->happinessNegative,
             'createdAt' => $this->createdAt ?? null
         ];
 
