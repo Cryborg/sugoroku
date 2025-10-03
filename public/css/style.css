@@ -1144,6 +1144,39 @@ button:disabled {
     margin-bottom: 20px;
 }
 
+.avatar-type-selector {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.btn-avatar-type {
+    padding: 12px 24px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+    max-width: 200px;
+}
+
+.btn-avatar-type:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+.btn-avatar-type.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
 .avatar-gender-selector {
     display: flex;
     gap: 10px;
@@ -2190,7 +2223,7 @@ button:disabled {
 /* Nom et avatar du joueur au-dessus des contrôles */
 .player-controls-name {
     position: absolute;
-    top: -90px;
+    top: -130px;
     left: 50%;
     transform: translateX(-50%);
     color: var(--text-primary);
@@ -2211,8 +2244,8 @@ button:disabled {
 }
 
 .player-controls-avatar {
-    width: 36px;
-    height: 36px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;

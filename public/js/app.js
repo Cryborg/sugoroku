@@ -23,8 +23,10 @@ createApp({
             newPlayerName: '',
             tempAvatar: null,
             tempGender: 'male',
+            tempAvatarType: 'adult',  // adult ou child
             showAvatarPicker: false,
             avatarPickerGender: 'male',
+            avatarPickerType: 'adult',  // adult ou child
             error: '',
             gameId: null,
             game: null,
@@ -206,11 +208,13 @@ createApp({
 
         openAvatarPicker() {
             this.avatarPickerGender = this.tempGender || 'male';
+            this.avatarPickerType = this.tempAvatarType || 'adult';
             this.showAvatarPicker = true;
         },
 
-        selectAvatar(gender, avatarNumber) {
-            const avatarName = `${gender}_${String(avatarNumber).padStart(2, '0')}.png`;
+        selectAvatar(gender, avatarNumber, type) {
+            const prefix = type === 'child' ? 'children' : gender;
+            const avatarName = `${prefix}_${String(avatarNumber).padStart(2, '0')}.png`;
 
             // Vérifier si l'avatar est déjà utilisé
             if (this.players.some(p => p.gender === gender && p.avatar === avatarName)) {
@@ -219,16 +223,22 @@ createApp({
 
             this.tempAvatar = avatarName;
             this.tempGender = gender;
+            this.tempAvatarType = type;
             this.showAvatarPicker = false;
         },
 
-        isAvatarUsed(gender, avatarNumber) {
-            const avatarName = `${gender}_${String(avatarNumber).padStart(2, '0')}.png`;
+        isAvatarUsed(gender, avatarNumber, type) {
+            const prefix = type === 'child' ? 'children' : gender;
+            const avatarName = `${prefix}_${String(avatarNumber).padStart(2, '0')}.png`;
             return this.players.some(p => p.gender === gender && p.avatar === avatarName);
         },
 
-        getAvatarCount(gender) {
-            // 24 avatars féminins, 23 masculins
+        getAvatarCount(gender, type) {
+            if (type === 'child') {
+                // 23 filles enfants, 25 garçons enfants
+                return gender === 'female' ? 23 : 25;
+            }
+            // 24 femmes adultes, 23 hommes adultes
             return gender === 'female' ? 24 : 23;
         },
 
@@ -511,12 +521,10 @@ createApp({
                     id: p.id,
                     name: p.name,
                     points: this.playersPointsAtTurnStart[p.id] ?? p.points,
-                    animatedPoints: this.playersPointsAtTurnStart[p.id] ?? p.points
+                    animatedPoints: this.playersPointsAtTurnStart[p.id] ?? p.points,
+                    gender: p.gender,
+                    avatar: p.avatar
                 }));
-
-                console.log(`[checkNextTurn] Tour ${currentTurn} terminé`);
-                console.log(`[checkNextTurn] Points AVANT (début tour):`, playersBeforeTurn.map(p => `${p.name}: ${p.points}`));
-                console.log(`[checkNextTurn] Points ACTUELS (avant nextTurn):`, this.game.players.map(p => `${p.name}: ${p.points}`));
 
                 // Appeler nextTurn pour passer au tour suivant (déduit les points de salle côté serveur)
                 await this.nextTurn();
@@ -527,8 +535,6 @@ createApp({
                     name: p.name,
                     points: p.points
                 }));
-
-                console.log(`[checkNextTurn] Points APRÈS (après nextTurn):`, playersAfterTurn.map(p => `${p.name}: ${p.points}`));
 
                 // Afficher la popup de perte de points
                 await this.showPointsLoss(currentTurn, playersBeforeTurn, playersAfterTurn);
@@ -547,8 +553,6 @@ createApp({
                     this.remainingTime = GAME_CONFIG.TURN_TIMER_SECONDS;
 
                     // Sauvegarder les points du NOUVEAU tour (pour la prochaine fois)
-                    console.log(`[nextTurn] Sauvegarde des points pour le tour ${this.game.currentTurn}:`, this.game.players.map(p => `${p.name}: ${p.points}`));
-                    console.log(`[nextTurn] Salles visitées:`, this.game.rooms.filter(r => r.isVisited).map(r => `${r.positionX},${r.positionY} (exit:${r.isExit})`));
                     this.playersPointsAtTurnStart = {};
                     this.game.players.forEach(player => {
                         this.playersPointsAtTurnStart[player.id] = player.points;
@@ -581,11 +585,6 @@ createApp({
         },
 
         async showPointsLoss(turn, oldPlayersData, newPlayersData) {
-            const startTime = Date.now();
-            console.log(`[${Date.now() - startTime}ms] === DÉBUT showPointsLoss ===`);
-            console.log(`[${Date.now() - startTime}ms] Points d'origine:`, oldPlayersData.map(p => `${p.name}: ${p.points}`));
-            console.log(`[${Date.now() - startTime}ms] Points finaux:`, newPlayersData.map(p => `${p.name}: ${p.points}`));
-
             // Afficher la popup avec les points d'origine + calculer les pertes + statut final
             this.pointsLossData = {
                 turn,
@@ -606,10 +605,8 @@ createApp({
                 })
             };
             this.showPointsLossPopup = true;
-            console.log(`[${Date.now() - startTime}ms] Popup affichée avec points:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
 
             // Attendre 2 secondes avant de commencer la décrémentation
-            console.log(`[${Date.now() - startTime}ms] Attente 2 secondes...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Activer l'animation de perte (fade up)
@@ -624,8 +621,6 @@ createApp({
                     maxPointsToRemove = Math.max(maxPointsToRemove, diff);
                 }
             }
-
-            console.log(`[${Date.now() - startTime}ms] DÉBUT ANIMATION - maxPointsToRemove: ${maxPointsToRemove}`);
 
             // Animer chaque point un par un
             for (let i = 1; i <= maxPointsToRemove; i++) {
@@ -649,22 +644,13 @@ createApp({
                     };
                 });
 
-                if (i === 1 || i === maxPointsToRemove) {
-                    console.log(`[${Date.now() - startTime}ms] Frame ${i}/${maxPointsToRemove}:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
-                }
-
                 // 150ms entre chaque décrémentation (environ 6-7 points par seconde)
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
 
-            console.log(`[${Date.now() - startTime}ms] FIN ANIMATION`);
-            console.log(`[${Date.now() - startTime}ms] Points finaux affichés:`, this.pointsLossData.players.map(p => `${p.name}: ${p.animatedPoints}`));
-
             // Attendre 2 secondes après la fin de l'animation (temps pour le fade up de finir)
-            console.log(`[${Date.now() - startTime}ms] Attente 2 secondes avant fermeture...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            console.log(`[${Date.now() - startTime}ms] Fermeture popup`);
             this.showPointsLossPopup = false;
             this.pointsLossData = null;
         },
@@ -967,7 +953,7 @@ createApp({
                                      @touchstart="(e) => onPlayerBadgeTouch(e, p)"
                                      :title="p.name + ' - ' + p.points + ' pts'">
                                     <span v-if="p.status === 'dead'" class="player-badge-death">💀</span>
-                                    <img v-else :src="'avatars/' + (p.gender || 'male') + '/' + (p.avatar || 'male_01.png')" class="player-badge-img" :alt="p.name">
+                                    <img v-else :src="'avatars/' + p.gender + '/' + p.avatar" class="player-badge-img" :alt="p.name">
                                 </div>
                             </div>
                             <div v-if="playersInRoom(room.id).length > 0" class="doors-container">

@@ -271,28 +271,41 @@
                 <button @click="showAvatarPicker = false" class="btn-close-modal">×</button>
                 <h2>Choisis ton avatar</h2>
 
+                <div class="avatar-type-selector">
+                    <button
+                        @click="avatarPickerType = 'adult'"
+                        :class="['btn-avatar-type', {active: avatarPickerType === 'adult'}]">
+                        🧑 Adulte
+                    </button>
+                    <button
+                        @click="avatarPickerType = 'child'"
+                        :class="['btn-avatar-type', {active: avatarPickerType === 'child'}]">
+                        👶 Enfant
+                    </button>
+                </div>
+
                 <div class="avatar-gender-selector">
                     <button
                         @click="avatarPickerGender = 'male'"
                         :class="['btn-gender', {active: avatarPickerGender === 'male'}]">
-                        👨 Homme
+                        👨 {{ avatarPickerType === 'child' ? 'Garçon' : 'Homme' }}
                     </button>
                     <button
                         @click="avatarPickerGender = 'female'"
                         :class="['btn-gender', {active: avatarPickerGender === 'female'}]">
-                        👩 Femme
+                        👩 {{ avatarPickerType === 'child' ? 'Fille' : 'Femme' }}
                     </button>
                 </div>
 
                 <div class="avatar-grid">
                     <div
-                        v-for="i in getAvatarCount(avatarPickerGender)"
+                        v-for="i in getAvatarCount(avatarPickerGender, avatarPickerType)"
                         :key="i"
-                        @click="selectAvatar(avatarPickerGender, i)"
+                        @click="selectAvatar(avatarPickerGender, i, avatarPickerType)"
                         class="avatar-option"
-                        :class="{selected: isAvatarUsed(avatarPickerGender, i)}">
-                        <img :src="`avatars/${avatarPickerGender}/${avatarPickerGender}_${String(i).padStart(2, '0')}.png`" :alt="`Avatar ${i}`">
-                        <span v-if="isAvatarUsed(avatarPickerGender, i)" class="avatar-used-badge">✓</span>
+                        :class="{selected: isAvatarUsed(avatarPickerGender, i, avatarPickerType)}">
+                        <img :src="`avatars/${avatarPickerGender}/${(avatarPickerType === 'child' ? 'children' : avatarPickerGender)}_${String(i).padStart(2, '0')}.png`" :alt="`Avatar ${i}`">
+                        <span v-if="isAvatarUsed(avatarPickerGender, i, avatarPickerType)" class="avatar-used-badge">✓</span>
                     </div>
                 </div>
             </div>
@@ -307,7 +320,7 @@
                         <div class="player-avatar">
                             <span v-if="player.finalStatus === 'dead'" class="player-status-icon">💀</span>
                             <span v-else-if="player.finalStatus === 'winner'" class="player-status-icon">🏁</span>
-                            <img v-else :src="`avatars/${player.gender || 'male'}/${player.avatar || 'male_01.png'}`" class="player-avatar-img" :alt="player.name">
+                            <img v-else :src="`avatars/${player.gender}/${player.avatar}`" class="player-avatar-img" :alt="player.name">
                         </div>
                         <div class="player-name">{{ player.name }}</div>
                         <div class="player-points-value">
