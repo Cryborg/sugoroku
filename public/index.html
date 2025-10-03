@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Future Sugoroku - Trapped</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Écran d'enregistrement des joueurs -->
+        <div v-if="screen === 'registration'" class="registration-screen">
+            <h1>⚠️ Future Sugoroku</h1>
+            <p class="subtitle">Enregistrez les joueurs (3-8)</p>
+
+            <div class="player-form">
+                <input
+                    v-model="newPlayerName"
+                    @keyup.enter="addPlayer"
+                    type="text"
+                    placeholder="Nom du joueur"
+                    maxlength="20"
+                >
+                <button @click="addPlayer" :disabled="!newPlayerName.trim()">
+                    Ajouter
+                </button>
+            </div>
+
+            <div class="player-list">
+                <div v-for="(player, index) in players" :key="index" class="player-item">
+                    <span>{{ player }}</span>
+                    <button @click="removePlayer(index)" class="btn-remove">×</button>
+                </div>
+            </div>
+
+            <button
+                @click="startGame"
+                :disabled="players.length < 3"
+                class="btn-start"
+            >
+                Démarrer la partie ({{ players.length }}/8)
+            </button>
+
+            <p v-if="error" class="error">{{ error }}</p>
+        </div>
+
+        <!-- Écran de jeu -->
+        <div v-if="screen === 'game'" class="game-screen">
+            <game-board
+                :game="game"
+                :remaining-time="remainingTime"
+                @open-door="openDoor"
+                @choose-door="chooseDoor"
+                @free-player="freePlayer"
+                @stay-in-room="stayInRoom"
+                @give-up="giveUp"
+            ></game-board>
+        </div>
+
+        <!-- Écran de fin -->
+        <div v-if="screen === 'end'" class="end-screen">
+            <h1>🎮 Partie terminée</h1>
+
+            <div v-if="endData.reason === 'victory'" class="winners">
+                <h2>🎉 Gagnants !</h2>
+                <div v-for="winner in endData.winners" :key="winner.id" class="winner-item">
+                    {{ winner.name }} - {{ winner.points }} points
+                </div>
+            </div>
+
+            <div v-else class="defeat">
+                <h2>💀 Défaite</h2>
+                <p v-if="endData.reason === 'timeout'">Le temps est écoulé (15 tours)</p>
+                <p v-if="endData.reason === 'all_dead'">Tous les joueurs sont morts</p>
+            </div>
+
+            <div v-if="endData.survivors && endData.survivors.length > 0" class="survivors">
+                <h3>Survivants</h3>
+                <div v-for="survivor in endData.survivors" :key="survivor.id">
+                    {{ survivor.name }} - {{ survivor.points }} points
+                </div>
+            </div>
+
+            <div v-if="endData.dead && endData.dead.length > 0" class="dead">
+                <h3>Morts</h3>
+                <div v-for="dead in endData.dead" :key="dead.id">
+                    {{ dead.name }}
+                </div>
+            </div>
+
+            <button @click="resetGame" class="btn-reset">Nouvelle partie</button>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
