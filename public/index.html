@@ -87,7 +87,6 @@
                     <div v-for="(player, index) in players" :key="index" class="player-item">
                         <img :src="`avatars/${player.gender}/${player.avatar}`" class="player-avatar-mini" :alt="player.name">
                         <span>{{ player.name }}</span>
-                        <span class="player-gender-badge">{{ player.gender === 'male' ? '👨' : '👩' }}</span>
                         <button @click="removePlayer(index)" class="btn-remove">×</button>
                     </div>
                 </div>
@@ -299,9 +298,9 @@
                 <div class="players-points-grid">
                     <div v-for="player in pointsLossData?.players" :key="player.id" class="player-points-card">
                         <div class="player-avatar">
-                            <span v-if="player.finalStatus === 'dead'">💀</span>
-                            <span v-else-if="player.finalStatus === 'winner'">🏁</span>
-                            <span v-else>{{ player.name[0] }}</span>
+                            <span v-if="player.finalStatus === 'dead'" class="player-status-icon">💀</span>
+                            <span v-else-if="player.finalStatus === 'winner'" class="player-status-icon">🏁</span>
+                            <img v-else :src="`avatars/${player.gender}/${player.avatar}`" class="player-avatar-img" :alt="player.name">
                         </div>
                         <div class="player-name">{{ player.name }}</div>
                         <div class="player-points-value">

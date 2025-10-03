@@ -1640,6 +1640,17 @@ button:disabled {
     font-size: 36px;
     font-weight: bold;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    overflow: hidden;
+}
+
+.player-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.player-status-icon {
+    font-size: 48px;
 }
 
 .player-name {
@@ -1830,6 +1841,20 @@ button:disabled {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     user-select: none;
     touch-action: manipulation;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+}
+
+.player-badge-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.player-badge-death {
+    font-size: 24px;
 }
 
 .player-badge-interactive:hover {
@@ -2143,13 +2168,8 @@ button:disabled {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--accent-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
+    object-fit: cover;
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--accent-primary);
 }
