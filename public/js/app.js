@@ -14,6 +14,10 @@ createApp({
             screen: 'registration', // registration, game, end
             players: JSON.parse(localStorage.getItem('trapped_players') || '[]'), // Charger depuis localStorage
             newPlayerName: '',
+            tempAvatar: null,
+            tempGender: 'male',
+            showAvatarPicker: false,
+            avatarPickerGender: 'male',
             error: '',
             gameId: null,
             game: null,
@@ -169,21 +173,56 @@ createApp({
         // Enregistrement des joueurs
         addPlayer() {
             const name = this.newPlayerName.trim();
-            if (!name) return;
+            if (!name || !this.tempAvatar) return;
 
             if (this.players.length >= 8) {
                 this.error = 'Maximum 8 joueurs';
                 return;
             }
 
-            if (this.players.includes(name)) {
+            if (this.players.some(p => p.name === name)) {
                 this.error = 'Ce nom est déjà pris';
                 return;
             }
 
-            this.players.push(name);
+            this.players.push({
+                name: name,
+                gender: this.tempGender,
+                avatar: this.tempAvatar
+            });
+
             this.newPlayerName = '';
+            this.tempAvatar = null;
+            this.tempGender = 'male';
             this.error = '';
+        },
+
+        openAvatarPicker() {
+            this.avatarPickerGender = this.tempGender || 'male';
+            this.showAvatarPicker = true;
+        },
+
+        selectAvatar(gender, avatarNumber) {
+            const avatarName = `${gender}_${String(avatarNumber).padStart(2, '0')}.png`;
+
+            // Vérifier si l'avatar est déjà utilisé
+            if (this.players.some(p => p.gender === gender && p.avatar === avatarName)) {
+                return; // Ne permet pas de sélectionner un avatar déjà utilisé
+            }
+
+            this.tempAvatar = avatarName;
+            this.tempGender = gender;
+            this.showAvatarPicker = false;
+        },
+
+        isAvatarUsed(gender, avatarNumber) {
+            const avatarName = `${gender}_${String(avatarNumber).padStart(2, '0')}.png`;
+            return this.players.some(p => p.gender === gender && p.avatar === avatarName);
+        },
+
+        getAvatarCount(gender) {
+            // 24 avatars féminins, 23 masculins
+            return gender === 'female' ? 24 : 23;
         },
 
         removePlayer(index) {

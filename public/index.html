@@ -74,14 +74,20 @@
                         placeholder="Nom du joueur"
                         maxlength="20"
                     >
-                    <button @click="addPlayer" :disabled="!newPlayerName.trim()">
+                    <button @click="openAvatarPicker" class="btn-avatar-picker" type="button">
+                        <img v-if="tempAvatar" :src="`avatars/${tempGender}/${tempAvatar}`" class="temp-avatar-preview">
+                        <span v-else>Choisir avatar</span>
+                    </button>
+                    <button @click="addPlayer" :disabled="!newPlayerName.trim() || !tempAvatar">
                         Ajouter
                     </button>
                 </div>
 
                 <div class="player-list">
                     <div v-for="(player, index) in players" :key="index" class="player-item">
-                        <span>{{ player }}</span>
+                        <img :src="`avatars/${player.gender}/${player.avatar}`" class="player-avatar-mini" :alt="player.name">
+                        <span>{{ player.name }}</span>
+                        <span class="player-gender-badge">{{ player.gender === 'male' ? '👨' : '👩' }}</span>
                         <button @click="removePlayer(index)" class="btn-remove">×</button>
                     </div>
                 </div>
@@ -249,6 +255,39 @@
                         <li>✅ Tous les joueurs vivants atteignent la sortie</li>
                         <li>❌ Défaite si le temps expire (15 tours) ou si tous les joueurs meurent</li>
                     </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modale de sélection d'avatar -->
+        <div v-if="showAvatarPicker" class="modal-overlay" @click="showAvatarPicker = false">
+            <div class="modal-content modal-avatar-picker" @click.stop>
+                <button @click="showAvatarPicker = false" class="btn-close-modal">×</button>
+                <h2>Choisis ton avatar</h2>
+
+                <div class="avatar-gender-selector">
+                    <button
+                        @click="avatarPickerGender = 'male'"
+                        :class="['btn-gender', {active: avatarPickerGender === 'male'}]">
+                        👨 Homme
+                    </button>
+                    <button
+                        @click="avatarPickerGender = 'female'"
+                        :class="['btn-gender', {active: avatarPickerGender === 'female'}]">
+                        👩 Femme
+                    </button>
+                </div>
+
+                <div class="avatar-grid">
+                    <div
+                        v-for="i in getAvatarCount(avatarPickerGender)"
+                        :key="i"
+                        @click="selectAvatar(avatarPickerGender, i)"
+                        class="avatar-option"
+                        :class="{selected: isAvatarUsed(avatarPickerGender, i)}">
+                        <img :src="`avatars/${avatarPickerGender}/${avatarPickerGender}_${String(i).padStart(2, '0')}.png`" :alt="`Avatar ${i}`">
+                        <span v-if="isAvatarUsed(avatarPickerGender, i)" class="avatar-used-badge">✓</span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -176,6 +176,44 @@ body {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.btn-avatar-picker {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+}
+
+.btn-avatar-picker:hover {
+    border-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.temp-avatar-preview {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.player-avatar-mini {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+}
+
+.player-gender-badge {
+    margin-left: auto;
+    font-size: 16px;
+}
+
 button {
     padding: 12px 24px;
     background: var(--accent-primary);
@@ -1046,6 +1084,96 @@ button:disabled {
 .btn-close-modal:hover {
     color: var(--text-primary);
     transform: scale(1.1);
+}
+
+/* Modale de sélection d'avatar */
+.modal-avatar-picker {
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-avatar-picker h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.avatar-gender-selector {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.btn-gender {
+    padding: 12px 24px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.btn-gender:hover {
+    border-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.btn-gender.active {
+    border-color: var(--accent-primary);
+    background: var(--accent-primary);
+    color: white;
+}
+
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+.avatar-option {
+    position: relative;
+    cursor: pointer;
+    border: 3px solid var(--border-color);
+    border-radius: 12px;
+    padding: 5px;
+    transition: all 0.3s;
+    background: var(--bg-tertiary);
+}
+
+.avatar-option:hover {
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.avatar-option.selected {
+    border-color: var(--accent-danger);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.avatar-option.selected:hover {
+    transform: none;
+}
+
+.avatar-option img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}
+
+.avatar-used-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    color: var(--accent-danger);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* Scrollbar personnalisée */

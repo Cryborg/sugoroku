@@ -15,9 +15,9 @@ class GameController
     /**
      * Crée une nouvelle partie
      */
-    public function create(array $playerNames, string $difficulty = 'normal', bool $freeRoomsEnabled = false): array
+    public function create(array $players, string $difficulty = 'normal', bool $freeRoomsEnabled = false): array
     {
-        if (count($playerNames) < 3 || count($playerNames) > 8) {
+        if (count($players) < 3 || count($players) > 8) {
             return $this->error('Le nombre de joueurs doit être entre 3 et 8');
         }
 
@@ -56,15 +56,26 @@ class GameController
         }
 
         // Créer les joueurs
-        foreach ($playerNames as $name) {
+        foreach ($players as $playerData) {
             $player = new Player();
             $player->gameId = $game->id;
-            $player->name = trim($name);
+
+            // Support both old format (string) and new format (object)
+            if (is_string($playerData)) {
+                $player->name = trim($playerData);
+                $player->gender = 'male';
+                $player->avatar = 'male_01.png';
+            } else {
+                $player->name = trim($playerData['name']);
+                $player->gender = $playerData['gender'] ?? 'male';
+                $player->avatar = $playerData['avatar'] ?? 'male_01.png';
+            }
+
             $player->currentRoomId = $startRoom->id;
             $player->points = $startingPoints;
 
             if (!$player->create()) {
-                return $this->error("Impossible de créer le joueur {$name}");
+                return $this->error("Impossible de créer le joueur {$player->name}");
             }
         }
 

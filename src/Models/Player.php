@@ -22,6 +22,8 @@ class Player
     public int $happiness = 0; // Bonheur total accumulé
     public int $happinessPositive = 0; // Bonheur positif accumulé
     public int $happinessNegative = 0; // Malheur accumulé (valeur absolue)
+    public string $gender = 'male'; // male, female
+    public string $avatar = 'male_01.png'; // Nom du fichier avatar
     public string $createdAt;
 
     public function __construct()
@@ -35,8 +37,8 @@ class Player
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO players (game_id, name, points, current_room_id, status, happiness, happiness_positive, happiness_negative)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO players (game_id, name, points, current_room_id, status, happiness, happiness_positive, happiness_negative, gender, avatar)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         if ($stmt->execute([
@@ -47,7 +49,9 @@ class Player
             $this->status,
             $this->happiness,
             $this->happinessPositive,
-            $this->happinessNegative
+            $this->happinessNegative,
+            $this->gender,
+            $this->avatar
         ])) {
             $this->id = (int) $this->db->lastInsertId();
             return true;
@@ -87,6 +91,8 @@ class Player
         $this->happiness = $data['happiness'] ?? 0;
         $this->happinessPositive = $data['happiness_positive'] ?? 0;
         $this->happinessNegative = $data['happiness_negative'] ?? 0;
+        $this->gender = $data['gender'] ?? 'male';
+        $this->avatar = $data['avatar'] ?? 'male_01.png';
         $this->createdAt = $data['created_at'];
     }
 
@@ -291,6 +297,8 @@ class Player
             'happiness' => $this->happiness,
             'happinessPositive' => $this->happinessPositive,
             'happinessNegative' => $this->happinessNegative,
+            'gender' => $this->gender,
+            'avatar' => $this->avatar,
             'createdAt' => $this->createdAt ?? null
         ];
 
