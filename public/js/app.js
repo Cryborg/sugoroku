@@ -1,6 +1,13 @@
 const { createApp } = Vue;
 
-const API_BASE = 'api.php';
+// Détection de l'environnement pour l'API
+// En local (localhost ou 127.0.0.1 avec port), on utilise le format query string
+// En prod, on utilise le format PATH_INFO
+const isLocal = window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.port !== '';
+
+const API_BASE = isLocal ? 'api.php?' : 'api.php';
 
 // Configuration du jeu
 const GAME_CONFIG = {

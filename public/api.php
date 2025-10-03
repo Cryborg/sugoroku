@@ -19,15 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Récupérer la méthode et l'URI
 $method = $_SERVER['REQUEST_METHOD'];
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Nettoyer l'URI pour enlever le préfixe du dossier et api.php
-$uri = str_replace('/api.php', '', $uri);
-$scriptPath = dirname($_SERVER['SCRIPT_NAME']);
-if ($scriptPath !== '/') {
-    $uri = str_replace($scriptPath, '', $uri);
+// Gérer les deux formats : PATH_INFO (prod) et QUERY_STRING (local)
+if (!empty($_SERVER['QUERY_STRING']) && strpos($_SERVER['QUERY_STRING'], '/') === 0) {
+    // Format local : api.php?/game/create
+    $uri = $_SERVER['QUERY_STRING'];
+} else {
+    // Format prod : /path/to/api.php/game/create
+    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    // Nettoyer l'URI pour enlever le préfixe du dossier et api.php
+    $uri = str_replace('/api.php', '', $uri);
+    $scriptPath = dirname($_SERVER['SCRIPT_NAME']);
+    if ($scriptPath !== '/') {
+        $uri = str_replace($scriptPath, '', $uri);
+    }
+    $uri = '/' . ltrim($uri, '/');
 }
-$uri = '/' . ltrim($uri, '/');
 
 // Récupérer les données POST/PUT
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
