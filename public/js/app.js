@@ -17,9 +17,18 @@ const GAME_CONFIG = {
 
 createApp({
     data() {
+        // Charger les joueurs du localStorage et vérifier leur validité
+        let savedPlayers = JSON.parse(localStorage.getItem('trapped_players') || '[]');
+
+        // Vider les joueurs anciens qui n'ont pas les nouveaux champs avatar
+        if (savedPlayers.length > 0 && (!savedPlayers[0].gender || !savedPlayers[0].avatar)) {
+            savedPlayers = [];
+            localStorage.removeItem('trapped_players');
+        }
+
         return {
             screen: 'registration', // registration, game, end
-            players: JSON.parse(localStorage.getItem('trapped_players') || '[]'), // Charger depuis localStorage
+            players: savedPlayers,
             newPlayerName: '',
             tempAvatar: null,
             tempGender: 'male',
