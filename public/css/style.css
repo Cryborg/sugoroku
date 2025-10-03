@@ -1382,8 +1382,8 @@ button:disabled {
 
 .player-controls-overlay .direction-button:hover:not(.disabled) {
     background: var(--accent-primary);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+    border-color: white;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
 }
 
 .player-controls-overlay .direction-button.disabled {
@@ -1455,7 +1455,8 @@ button:disabled {
 
 .player-controls-overlay .direction-center:hover {
     background: #0d9668;
-    transform: translate(-50%, -50%) scale(1.1);
+    border-color: white;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
 }
 
 .player-controls-overlay .direction-stay-label {
@@ -1479,7 +1480,8 @@ button:disabled {
 
 .player-controls-overlay .direction-give-up:hover {
     background: #dc2626;
-    transform: scale(1.15);
+    border-color: white;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
 }
 
 /* Adaptation pour mobile */
