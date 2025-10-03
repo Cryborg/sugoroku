@@ -1348,6 +1348,21 @@ button:disabled {
     transform: translate(-50%, -50%);
 }
 
+.player-controls-overlay::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(10, 14, 39, 0.95) 0%, rgba(10, 14, 39, 0.85) 70%, transparent 100%);
+    border-radius: 50%;
+    pointer-events: auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+}
+
 .player-controls-overlay .direction-button {
     position: absolute;
     background: var(--bg-primary);
@@ -1362,6 +1377,7 @@ button:disabled {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    z-index: 1;
 }
 
 .player-controls-overlay .direction-button:hover:not(.disabled) {
@@ -1471,6 +1487,11 @@ button:disabled {
     .player-controls-overlay {
         width: 180px;
         height: 180px;
+    }
+
+    .player-controls-overlay::before {
+        width: 160px;
+        height: 160px;
     }
 
     .player-controls-overlay .direction-button {
