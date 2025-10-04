@@ -6,6 +6,7 @@ use Trapped\Config;
 use Trapped\Models\Game;
 use Trapped\Models\Player;
 use Trapped\Models\Room;
+use Trapped\Controllers\AuthController;
 
 /**
  * GameController - Gestion des parties
@@ -17,8 +18,8 @@ class GameController
      */
     public function create(array $players, string $difficulty = 'normal', bool $freeRoomsEnabled = false): array
     {
-        if (count($players) < 3 || count($players) > 8) {
-            return $this->error('Le nombre de joueurs doit être entre 3 et 8');
+        if (count($players) < 3 || count($players) > 12) {
+            return $this->error('Le nombre de joueurs doit être entre 3 et 12');
         }
 
         // Convertir la difficulté en points de départ
@@ -29,6 +30,7 @@ class GameController
         };
 
         $game = new Game();
+        $game->userId = AuthController::getUserId();
         $game->startingPoints = $startingPoints;
         $game->freeRoomsEnabled = $freeRoomsEnabled;
 
@@ -220,8 +222,9 @@ class GameController
     public function listGames(): array
     {
         $db = \Trapped\Database\Database::getInstance();
+        $userId = AuthController::getUserId();
 
-        $stmt = $db->query("
+        $stmt = $db->prepare("
             SELECT
                 g.id,
                 g.created_at,
@@ -232,11 +235,12 @@ class GameController
                 GROUP_CONCAT(p.name, ', ') as player_names
             FROM games g
             LEFT JOIN players p ON p.game_id = g.id
-            WHERE g.status IN ('playing', 'finished')
+            WHERE g.user_id = ? AND g.status IN ('playing', 'finished')
             GROUP BY g.id
             ORDER BY g.created_at DESC
             LIMIT 50
         ");
+        $stmt->execute([$userId]);
 
         $games = [];
         while ($row = $stmt->fetch()) {

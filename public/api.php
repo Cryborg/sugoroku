@@ -5,12 +5,19 @@ require_once __DIR__ . '/../autoload.php';
 use Trapped\Controllers\GameController;
 use Trapped\Controllers\PlayerController;
 use Trapped\Controllers\TurnController;
+use Trapped\Controllers\AuthController;
+
+// Démarrer la session
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 // Headers CORS et JSON
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Credentials: true');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -62,6 +69,48 @@ function route(string $method, string $uri, array $input): array
     $parts = array_values($parts);
 
     // Routes API
+
+    // Routes d'authentification (publiques)
+
+    // POST /auth/register
+    if ($method === 'POST' && $parts[0] === 'auth' && $parts[1] === 'register') {
+        $controller = new AuthController();
+        return $controller->register(
+            $input['email'] ?? '',
+            $input['password'] ?? '',
+            $input['username'] ?? ''
+        );
+    }
+
+    // POST /auth/login
+    if ($method === 'POST' && $parts[0] === 'auth' && $parts[1] === 'login') {
+        $controller = new AuthController();
+        return $controller->login(
+            $input['email'] ?? '',
+            $input['password'] ?? ''
+        );
+    }
+
+    // POST /auth/logout
+    if ($method === 'POST' && $parts[0] === 'auth' && $parts[1] === 'logout') {
+        $controller = new AuthController();
+        return $controller->logout();
+    }
+
+    // GET /auth/me
+    if ($method === 'GET' && $parts[0] === 'auth' && $parts[1] === 'me') {
+        $controller = new AuthController();
+        return $controller->getCurrentUser();
+    }
+
+    // Vérifier l'authentification pour les routes protégées
+    if (!AuthController::isAuthenticated()) {
+        http_response_code(401);
+        return [
+            'success' => false,
+            'error' => 'Non authentifié'
+        ];
+    }
 
     // POST /game/create
     if ($method === 'POST' && $parts[0] === 'game' && $parts[1] === 'create') {
@@ -149,6 +198,37 @@ function route(string $method, string $uri, array $input): array
     if ($method === 'DELETE' && $parts[0] === 'game' && $parts[2] === 'delete') {
         $controller = new GameController();
         return $controller->deleteGame((int) $parts[1]);
+    }
+
+    // GET /players/favorites
+    if ($method === 'GET' && $parts[0] === 'players' && $parts[1] === 'favorites') {
+        $userId = AuthController::getUserId();
+        $user = new \Trapped\Models\User();
+        $user->load($userId);
+        return [
+            'success' => true,
+            'data' => $user->getFavoritePlayers()
+        ];
+    }
+
+    // POST /players/favorites
+    if ($method === 'POST' && $parts[0] === 'players' && $parts[1] === 'favorites') {
+        $userId = AuthController::getUserId();
+        $user = new \Trapped\Models\User();
+        $user->load($userId);
+
+        foreach ($input['players'] ?? [] as $player) {
+            $user->addFavoritePlayer(
+                $player['name'],
+                $player['gender'] ?? 'male',
+                $player['avatar'] ?? 'male_01.png'
+            );
+        }
+
+        return [
+            'success' => true,
+            'data' => ['message' => 'Joueurs favoris sauvegardés']
+        ];
     }
 
     // Route non trouvée

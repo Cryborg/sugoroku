@@ -241,12 +241,9 @@ Les dés affichés ont la même couleur que leur porte associée pour faciliter 
 - [x] Animations (heartbeat, bounce, fade)
 
 ### ⏳ Post-MVP (si temps)
-- [ ] Cartes "Futurs possibles" (événements aléatoires)
 - [ ] Animation des déplacements
 - [ ] Historique des tours
-- [ ] Sauvegarde de partie (localStorage)
 - [ ] Mode multijoueur en ligne (WebSockets)
-- [ ] Sons & effets
 
 ### ❌ Hors scope POC
 - Gestion de comptes utilisateurs

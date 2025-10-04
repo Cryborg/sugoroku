@@ -15,6 +15,7 @@ class Game
     private PDO $db;
 
     public ?int $id = null;
+    public int $userId;
     public string $createdAt;
     public int $currentTurn = 1;
     public string $status = 'waiting'; // waiting, playing, finished
@@ -33,11 +34,11 @@ class Game
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO games (created_at, current_turn, status, starting_points, free_rooms_enabled)
-            VALUES (datetime('now'), 1, 'waiting', ?, ?)
+            INSERT INTO games (user_id, created_at, current_turn, status, starting_points, free_rooms_enabled)
+            VALUES (?, datetime('now'), 1, 'waiting', ?, ?)
         ");
 
-        if ($stmt->execute([$this->startingPoints, $this->freeRoomsEnabled ? 1 : 0])) {
+        if ($stmt->execute([$this->userId, $this->startingPoints, $this->freeRoomsEnabled ? 1 : 0])) {
             $this->id = (int) $this->db->lastInsertId();
             $this->currentTurn = 1;
             $this->status = 'waiting';
@@ -59,6 +60,7 @@ class Game
 
         if ($data) {
             $this->id = $data['id'];
+            $this->userId = $data['user_id'];
             $this->createdAt = $data['created_at'];
             $this->currentTurn = $data['current_turn'];
             $this->status = $data['status'];

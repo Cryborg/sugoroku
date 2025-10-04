@@ -18,8 +18,13 @@ const GAME_CONFIG = {
 createApp({
     data() {
         return {
-            screen: 'registration', // registration, game, end
-            players: JSON.parse(localStorage.getItem('trapped_players') || '[]'),
+            screen: 'auth', // auth, registration, game, end
+            authMode: 'login', // login ou register
+            authEmail: '',
+            authPassword: '',
+            authUsername: '',
+            currentUser: null,
+            players: [],
             newPlayerName: '',
             tempAvatar: null,
             tempGender: 'male',
@@ -47,6 +52,7 @@ createApp({
             freeRoomsEnabled: localStorage.getItem('trapped_freeRooms') === 'true',
             showLoadGame: false,
             savedGames: [],
+            activeSection: 'new-game', // new-game, saved-games, admin
             showModal: false,
             modalData: {
                 title: '',
@@ -59,35 +65,163 @@ createApp({
         };
     },
 
-    watch: {
-        // Sauvegarder automatiquement les joueurs dans localStorage
-        players: {
-            handler(newPlayers) {
-                localStorage.setItem('trapped_players', JSON.stringify(newPlayers));
-            },
-            deep: true
-        },
-        // Sauvegarder la difficulté
-        difficulty(newValue) {
-            localStorage.setItem('trapped_difficulty', newValue);
-        },
-        // Sauvegarder l'option pièces gratuites
-        freeRoomsEnabled(newValue) {
-            localStorage.setItem('trapped_freeRooms', newValue.toString());
-        }
+    async mounted() {
+        // Vérifier si l'utilisateur est connecté
+        await this.checkAuth();
+
+        // Gestion globale des touches clavier pour les modales
+        window.addEventListener('keydown', this.handleGlobalKeyPress);
     },
 
-    async mounted() {
-        await this.loadSavedGames();
-
-        // Si il y a des parties non terminées, afficher l'écran "Reprendre une partie" par défaut
-        const hasUnfinishedGames = this.savedGames.some(game => game.status === 'playing');
-        if (hasUnfinishedGames) {
-            this.showLoadGame = true;
-        }
+    beforeUnmount() {
+        window.removeEventListener('keydown', this.handleGlobalKeyPress);
+        this.stopPolling();
+        this.stopTimer();
     },
 
     methods: {
+        // Gestion globale des touches clavier
+        handleGlobalKeyPress(event) {
+            // Esc pour fermer les modales
+            if (event.key === 'Escape') {
+                if (this.showModal) {
+                    this.cancelModal();
+                } else if (this.showHelp) {
+                    this.toggleHelp();
+                } else if (this.showAvatarPicker) {
+                    this.showAvatarPicker = false;
+                }
+            }
+
+            // Entrée pour valider les modales
+            if (event.key === 'Enter') {
+                if (this.showModal) {
+                    event.preventDefault();
+                    this.confirmModal();
+                }
+            }
+        },
+
+        // Authentification
+        async checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.currentUser = data.data.user;
+                    this.screen = 'registration';
+                    await this.loadFavoritePlayers();
+                    await this.loadSavedGames();
+
+                    // Si il y a des parties non terminées, afficher "Parties sauvegardées" par défaut
+                    const hasUnfinishedGames = this.savedGames.some(game => game.status === 'playing');
+                    if (hasUnfinishedGames) {
+                        this.activeSection = 'saved-games';
+                    } else {
+                        this.activeSection = 'new-game';
+                    }
+                } else {
+                    this.screen = 'auth';
+                }
+            } catch (e) {
+                console.error('Erreur de vérification auth:', e);
+                this.screen = 'auth';
+            }
+        },
+
+        async login() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: this.authEmail,
+                        password: this.authPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.currentUser = data.data.user;
+                    this.screen = 'registration';
+                    this.activeSection = 'new-game';
+                    await this.loadFavoritePlayers();
+                    await this.loadSavedGames();
+                } else {
+                    this.error = data.error;
+                }
+            } catch (e) {
+                this.error = 'Erreur de connexion au serveur';
+                console.error(e);
+            }
+        },
+
+        async register() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: this.authEmail,
+                        password: this.authPassword,
+                        username: this.authUsername
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.currentUser = data.data.user;
+                    this.screen = 'registration';
+                    this.activeSection = 'new-game';
+                    await this.loadFavoritePlayers();
+                } else {
+                    this.error = data.error;
+                }
+            } catch (e) {
+                this.error = 'Erreur de connexion au serveur';
+                console.error(e);
+            }
+        },
+
+        async logout() {
+            try {
+                await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+                this.currentUser = null;
+                this.players = [];
+                this.screen = 'auth';
+            } catch (e) {
+                console.error('Erreur de déconnexion:', e);
+            }
+        },
+
+        async loadFavoritePlayers() {
+            try {
+                const response = await fetch(`${API_BASE}/players/favorites`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.players = data.data;
+                }
+            } catch (e) {
+                console.error('Erreur de chargement des joueurs:', e);
+            }
+        },
+
+        async saveFavoritePlayers() {
+            try {
+                await fetch(`${API_BASE}/players/favorites`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: this.players })
+                });
+            } catch (e) {
+                console.error('Erreur de sauvegarde des joueurs:', e);
+            }
+        },
+
         // Système de modale
         showConfirmModal(title, message, onConfirm, confirmText = 'Confirmer', cancelText = 'Annuler') {
             this.modalData = {
@@ -186,12 +320,12 @@ createApp({
         },
 
         // Enregistrement des joueurs
-        addPlayer() {
+        async addPlayer() {
             const name = this.newPlayerName.trim();
             if (!name || !this.tempAvatar) return;
 
-            if (this.players.length >= 8) {
-                this.error = 'Maximum 8 joueurs';
+            if (this.players.length >= 12) {
+                this.error = 'Maximum 12 joueurs';
                 return;
             }
 
@@ -210,6 +344,9 @@ createApp({
             this.tempAvatar = null;
             this.tempGender = 'male';
             this.error = '';
+
+            // Sauvegarder automatiquement dans les favoris
+            await this.saveFavoritePlayers();
         },
 
         openAvatarPicker() {
@@ -253,8 +390,8 @@ createApp({
         },
 
         async startGame() {
-            if (this.players.length < 3) {
-                this.error = 'Minimum 3 joueurs requis';
+            if (this.players.length < 3 || this.players.length > 12) {
+                this.error = 'Le nombre de joueurs doit être entre 3 et 12';
                 return;
             }
 
@@ -680,11 +817,6 @@ createApp({
         }
     },
 
-    beforeUnmount() {
-        this.stopPolling();
-        this.stopTimer();
-    },
-
     components: {
         'game-board': {
             props: ['game', 'remainingTime'],
@@ -888,13 +1020,14 @@ createApp({
                 getHappinessLabel(player) {
                     const positive = player.happinessPositive || 0;
                     const negative = player.happinessNegative || 0;
+                    const maxHappiness = player.maxHappiness || 0;
 
                     if (positive === 0 && negative === 0) {
                         return '50% (neutre)';
                     }
 
                     const percentage = this.getHappinessPercentage(player);
-                    return `${percentage}% (+${positive}/-${negative})`;
+                    return `${percentage}% (+${positive}/-${negative}) Max: ${maxHappiness}`;
                 }
             },
             template: `

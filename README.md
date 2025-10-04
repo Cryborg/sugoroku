@@ -213,11 +213,12 @@ Le schéma SQL (`database/schema.sql`) est compatible MySQL.
 - [ ] Objets bonus (utilisables une seule fois)
   - Octroie un petit nombre de points temporaires, mais utilisable une seule fois. Au passage d'une porte, si l'utilisateur n'en avait au final pas besoin, les points sont retranchés
   - Assure d'avoir au moins (floor(nbPlayers/2)) à chaque dé
+  - pouvoir voir les bonus/malus d'une salle
+  - pouvoir jouer deux fois dans le même tour
+- [ ] Option pour activer/désactiver les bonus/malus dans une partie
 - [ ] Animations des déplacements
-- [ ] Cartes "Futurs possibles" (événements aléatoires)
 - [ ] WebSockets pour synchronisation temps réel
 - [ ] Historique des tours
-- [ ] Sauvegarde de partie
 - [ ] Mode multijoueur en ligne
 
 ## 🐛 Debug

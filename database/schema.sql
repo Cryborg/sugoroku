@@ -4,6 +4,7 @@
 -- Table des parties
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     current_turn INTEGER DEFAULT 1,
     status VARCHAR(20) DEFAULT 'waiting',
@@ -12,7 +13,8 @@ CREATE TABLE IF NOT EXISTS games (
     free_rooms_enabled BOOLEAN DEFAULT 0,
     CONSTRAINT check_turn CHECK (current_turn >= 1 AND current_turn <= 15),
     CONSTRAINT check_status CHECK (status IN ('waiting', 'playing', 'finished')),
-    CONSTRAINT check_starting_points CHECK (starting_points >= 15 AND starting_points <= 25)
+    CONSTRAINT check_starting_points CHECK (starting_points >= 15 AND starting_points <= 25),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Table des joueurs
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS players (
     happiness INTEGER DEFAULT 0,
     happiness_positive INTEGER DEFAULT 0,
     happiness_negative INTEGER DEFAULT 0,
+    max_happiness INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_points CHECK (points >= 0 AND points <= 25),
     CONSTRAINT check_status CHECK (status IN ('alive', 'dead', 'blocked', 'winner')),
@@ -81,6 +84,7 @@ CREATE TABLE IF NOT EXISTS player_choices (
 );
 
 -- Index pour optimiser les requêtes
+CREATE INDEX IF NOT EXISTS idx_games_user ON games(user_id);
 CREATE INDEX IF NOT EXISTS idx_players_game ON players(game_id);
 CREATE INDEX IF NOT EXISTS idx_rooms_game ON rooms(game_id);
 CREATE INDEX IF NOT EXISTS idx_doors_room ON doors(room_id);

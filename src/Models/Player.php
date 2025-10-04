@@ -22,6 +22,7 @@ class Player
     public int $happiness = 0; // Bonheur total accumulé
     public int $happinessPositive = 0; // Bonheur positif accumulé
     public int $happinessNegative = 0; // Malheur accumulé (valeur absolue)
+    public int $maxHappiness = 0; // Score de bonheur maximal atteint
     public string $gender = 'male'; // male, female
     public string $avatar = 'male_01.png'; // Nom du fichier avatar
     public string $createdAt;
@@ -37,8 +38,8 @@ class Player
     public function create(): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO players (game_id, name, points, current_room_id, status, happiness, happiness_positive, happiness_negative, gender, avatar)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO players (game_id, name, points, current_room_id, status, happiness, happiness_positive, happiness_negative, max_happiness, gender, avatar)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         if ($stmt->execute([
@@ -50,6 +51,7 @@ class Player
             $this->happiness,
             $this->happinessPositive,
             $this->happinessNegative,
+            $this->maxHappiness,
             $this->gender,
             $this->avatar
         ])) {
@@ -91,6 +93,7 @@ class Player
         $this->happiness = $data['happiness'] ?? 0;
         $this->happinessPositive = $data['happiness_positive'] ?? 0;
         $this->happinessNegative = $data['happiness_negative'] ?? 0;
+        $this->maxHappiness = $data['max_happiness'] ?? 0;
         $this->gender = $data['gender'] ?? 'male';
         $this->avatar = $data['avatar'] ?? 'male_01.png';
         $this->createdAt = $data['created_at'];
@@ -141,13 +144,18 @@ class Player
             $this->happinessNegative += abs($amount);
         }
 
+        // Mettre à jour le bonheur maximal si nécessaire
+        if ($this->happiness > $this->maxHappiness) {
+            $this->maxHappiness = $this->happiness;
+        }
+
         $stmt = $this->db->prepare("
             UPDATE players
-            SET happiness = ?, happiness_positive = ?, happiness_negative = ?
+            SET happiness = ?, happiness_positive = ?, happiness_negative = ?, max_happiness = ?
             WHERE id = ?
         ");
 
-        return $stmt->execute([$this->happiness, $this->happinessPositive, $this->happinessNegative, $this->id]);
+        return $stmt->execute([$this->happiness, $this->happinessPositive, $this->happinessNegative, $this->maxHappiness, $this->id]);
     }
 
     /**
@@ -297,6 +305,7 @@ class Player
             'happiness' => $this->happiness,
             'happinessPositive' => $this->happinessPositive,
             'happinessNegative' => $this->happinessNegative,
+            'maxHappiness' => $this->maxHappiness,
             'gender' => $this->gender,
             'avatar' => $this->avatar,
             'createdAt' => $this->createdAt ?? null
