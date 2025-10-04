@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER NOT NULL,
     name VARCHAR(100) NOT NULL,
+    gender VARCHAR(10) DEFAULT 'male',
+    avatar VARCHAR(50) DEFAULT 'male_01.png',
     points INTEGER DEFAULT 20,
     current_room_id INTEGER NULL,
     status VARCHAR(20) DEFAULT 'alive',

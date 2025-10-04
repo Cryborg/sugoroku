@@ -216,6 +216,7 @@ Le schéma SQL (`database/schema.sql`) est compatible MySQL.
   - pouvoir voir les bonus/malus d'une salle
   - pouvoir jouer deux fois dans le même tour
 - [ ] Option pour activer/désactiver les bonus/malus dans une partie
+- [ ] Les objets bonus peuvent être trouvés dans des salles
 - [ ] Animations des déplacements
 - [ ] WebSockets pour synchronisation temps réel
 - [ ] Historique des tours

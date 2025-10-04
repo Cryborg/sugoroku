@@ -66,8 +66,18 @@
 
         <!-- Écran d'accueil avec sidebar -->
         <div v-if="screen === 'registration'" class="home-screen">
+            <!-- Bouton hamburger mobile -->
+            <button @click="toggleMobileSidebar" :class="['hamburger-btn', { active: mobileMenuOpen }]">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <!-- Overlay pour fermer le menu -->
+            <div @click="closeMobileSidebar" :class="['sidebar-overlay', { active: mobileMenuOpen }]"></div>
+
             <!-- Sidebar -->
-            <div class="sidebar">
+            <div :class="['sidebar', { 'mobile-open': mobileMenuOpen }]">
                 <div class="sidebar-header">
                     <img src="assets/logo.png" alt="Trapped" class="sidebar-logo">
                     <div class="user-profile">
@@ -81,27 +91,27 @@
 
                 <nav class="sidebar-nav">
                     <button
-                        @click="activeSection = 'new-game'"
+                        @click="activeSection = 'new-game'; closeMobileSidebar()"
                         :class="['nav-item', { active: activeSection === 'new-game' }]">
                         <span class="nav-icon">🎮</span>
                         <span class="nav-label">Nouvelle partie</span>
                     </button>
                     <button
-                        @click="activeSection = 'saved-games'"
+                        @click="activeSection = 'saved-games'; closeMobileSidebar()"
                         :class="['nav-item', { active: activeSection === 'saved-games' }]">
                         <span class="nav-icon">💾</span>
                         <span class="nav-label">Parties sauvegardées</span>
                         <span v-if="savedGames.length > 0" class="nav-badge">{{ savedGames.length }}</span>
                     </button>
                     <button
-                        @click="toggleHelp"
+                        @click="toggleHelp(); closeMobileSidebar()"
                         class="nav-item">
                         <span class="nav-icon">❓</span>
                         <span class="nav-label">Aide</span>
                     </button>
                     <button
                         v-if="currentUser?.isAdmin"
-                        @click="activeSection = 'admin'"
+                        @click="activeSection = 'admin'; closeMobileSidebar()"
                         :class="['nav-item', { active: activeSection === 'admin' }]">
                         <span class="nav-icon">⚙️</span>
                         <span class="nav-label">Administration</span>

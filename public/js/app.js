@@ -61,7 +61,8 @@ createApp({
                 cancelText: 'Annuler',
                 onConfirm: null
             },
-            showHelp: false
+            showHelp: false,
+            mobileMenuOpen: false
         };
     },
 
@@ -247,6 +248,15 @@ createApp({
 
         toggleHelp() {
             this.showHelp = !this.showHelp;
+        },
+
+        // Gestion du menu mobile
+        toggleMobileSidebar() {
+            this.mobileMenuOpen = !this.mobileMenuOpen;
+        },
+
+        closeMobileSidebar() {
+            this.mobileMenuOpen = false;
         },
 
         // Charger la liste des parties sauvegardées
@@ -841,7 +851,10 @@ createApp({
                         top: '0px',
                         left: '0px'
                     },
-                    hideTimeout: null
+                    hideTimeout: null,
+                    gameMenuOpen: false,
+                    controlsOpenedAt: 0,
+                    stayButtonEnabled: false
                 };
             },
             computed: {
@@ -878,6 +891,12 @@ createApp({
                 }
             },
             methods: {
+                toggleGameMenu() {
+                    this.gameMenuOpen = !this.gameMenuOpen;
+                },
+                closeGameMenu() {
+                    this.gameMenuOpen = false;
+                },
                 formatTime(seconds) {
                     const mins = Math.floor(seconds / 60);
                     const secs = seconds % 60;
@@ -915,6 +934,13 @@ createApp({
 
                     this.hoveredPlayer = player;
                     this.hoveredPlayerBadge = badge;
+
+                    // Désactiver le bouton "Rester" pendant 200ms pour éviter les clics accidentels
+                    this.controlsOpenedAt = Date.now();
+                    this.stayButtonEnabled = false;
+                    setTimeout(() => {
+                        this.stayButtonEnabled = true;
+                    }, 200);
                 },
                 onPlayerBadgeLeave() {
                     this.hideTimeout = setTimeout(() => {
@@ -1034,13 +1060,12 @@ createApp({
                 <div class="game-container-fullscreen">
                     <!-- Header avec timer et infos -->
                     <div class="game-header">
-                        <!-- Boutons navigation -->
+                        <!-- Menu hamburger -->
                         <div class="game-nav-buttons">
-                            <button @click="$emit('go-home')" class="btn-home" title="Retour à l'accueil">
-                                🏠
-                            </button>
-                            <button @click="$emit('toggle-help')" class="btn-help" title="Aide">
-                                ?
+                            <button @click="toggleGameMenu" :class="['btn-game-menu', { active: gameMenuOpen }]">
+                                <span></span>
+                                <span></span>
+                                <span></span>
                             </button>
                         </div>
 
@@ -1071,6 +1096,27 @@ createApp({
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Overlay du menu -->
+                    <div v-if="gameMenuOpen" @click="closeGameMenu" class="game-menu-overlay"></div>
+
+                    <!-- Menu slide-in -->
+                    <div :class="['game-menu-panel', { open: gameMenuOpen }]">
+                        <div class="game-menu-header">
+                            <h3>Menu</h3>
+                            <button @click="closeGameMenu" class="btn-close-menu">×</button>
+                        </div>
+                        <div class="game-menu-items">
+                            <button @click="$emit('toggle-help'); closeGameMenu()" class="game-menu-item">
+                                <span class="menu-icon">❓</span>
+                                <span>Aide</span>
+                            </button>
+                            <button @click="$emit('go-home'); closeGameMenu()" class="game-menu-item">
+                                <span class="menu-icon">🏠</span>
+                                <span>Retour à l'accueil</span>
+                            </button>
                         </div>
                     </div>
 
@@ -1178,8 +1224,8 @@ createApp({
                         </div>
 
                         <!-- Centre : Rester -->
-                        <div class="direction-button direction-center"
-                             @click="stayInRoomAction(hoveredPlayer.id)">
+                        <div :class="['direction-button', 'direction-center', { disabled: !stayButtonEnabled }]"
+                             @click="stayButtonEnabled && stayInRoomAction(hoveredPlayer.id)">
                             <div class="direction-stay-label">Rester</div>
                         </div>
 
